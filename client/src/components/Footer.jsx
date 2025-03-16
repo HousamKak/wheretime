@@ -24,7 +24,7 @@ const Footer = () => {
               <polyline points="12 6 12 12 16 14" />
             </svg>
             <span className="ml-2 text-sm text-gray-600">
-              © {currentYear} TimeTracker. All rights reserved.
+              © {currentYear} WhereTime. All rights reserved.
             </span>
           </div>
 
@@ -47,7 +47,7 @@ const Footer = () => {
         
         {/* Additional footer content */}
         <div className="border-t border-gray-200 py-4 text-center text-xs text-gray-500">
-          <p>TimeTracker helps you visualize how you spend your time with intuitive charts and reports.</p>
+          <p>WhereTime helps you visualize how you spend your time with intuitive charts and reports.</p>
           <p className="mt-1">Track, analyze, and optimize your daily activities for better productivity and work-life balance.</p>
         </div>
       </div>
