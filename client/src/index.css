@@ -1003,7 +1003,6 @@ p {
 /* === Charts & Graphs === */
 .chart-container {
   position: relative;
-  height: 300px;
   margin: 1rem 0;
 }
 

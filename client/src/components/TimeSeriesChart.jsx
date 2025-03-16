@@ -35,48 +35,58 @@ const TimeSeriesChart = ({ data, categories, categoryVisibility }) => {
       }
     });
 
+    console.log("Root categories:", rootCategories);
     return { categoryMap, rootCategories };
   }, [categories]);
 
   // Calculate aggregated data that combines child categories into their parents
   const calculateAggregatedData = useCallback(() => {
-    if (!data || data.length === 0) return [];
+    console.log("Calculating aggregated data");
+    if (!data || data.length === 0) {
+      console.warn("No data for aggregation");
+      return [];
+    }
 
-    const { categoryMap } = processCategoryHierarchy();
-    const aggregatedData = JSON.parse(JSON.stringify(data)); // Deep clone data
+    try {
+      const { categoryMap } = processCategoryHierarchy();
+      const aggregatedData = JSON.parse(JSON.stringify(data)); // Deep clone data
 
-    // Calculate aggregated values for parent categories
-    aggregatedData.forEach(day => {
-      // Initialize all categories to 0
-      categories.forEach(category => {
-        if (!day[`category_${category.id}`]) {
-          day[`category_${category.id}`] = 0;
-        }
-      });
+      // Calculate aggregated values for parent categories
+      aggregatedData.forEach(day => {
+        // Initialize all categories to 0
+        categories.forEach(category => {
+          if (!day.hasOwnProperty(`category_${category.id}`)) {
+            day[`category_${category.id}`] = 0;
+          }
+        });
 
-      // For expanded categories, subtract child values from parent to avoid double counting
-      Object.keys(expandedCategories).forEach(parentId => {
-        if (expandedCategories[parentId]) {
-          const parent = categoryMap[parentId];
-          if (parent && parent.children && parent.children.length > 0) {
-            // Find all child categories
-            parent.children.forEach(child => {
-              // Subtract child value from parent if child is visible
-              if (categoryVisibility[child.id]) {
-                day[`category_${parentId}`] -= day[`category_${child.id}`] || 0;
+        // For expanded categories, subtract child values from parent to avoid double counting
+        Object.keys(expandedCategories).forEach(parentId => {
+          if (expandedCategories[parentId]) {
+            const parent = categoryMap[parentId];
+            if (parent && parent.children && parent.children.length > 0) {
+              // Find all child categories
+              parent.children.forEach(child => {
+                // Subtract child value from parent if child is visible
+                if (categoryVisibility[child.id]) {
+                  day[`category_${parentId}`] -= day[`category_${child.id}`] || 0;
+                }
+              });
+
+              // Ensure no negative values
+              if (day[`category_${parentId}`] < 0) {
+                day[`category_${parentId}`] = 0;
               }
-            });
-
-            // Ensure no negative values
-            if (day[`category_${parentId}`] < 0) {
-              day[`category_${parentId}`] = 0;
             }
           }
-        }
+        });
       });
-    });
 
-    return aggregatedData;
+      return aggregatedData;
+    } catch (error) {
+      console.error("Error in calculateAggregatedData:", error);
+      return [];
+    }
   }, [data, categories, expandedCategories, categoryVisibility, processCategoryHierarchy]);
 
   // Toggle category expansion
@@ -92,9 +102,12 @@ const TimeSeriesChart = ({ data, categories, categoryVisibility }) => {
     const updateDimensions = () => {
       if (svgRef.current) {
         const containerWidth = svgRef.current.parentElement.clientWidth;
+        const containerHeight = Math.max(450, containerWidth * 0.5);
+        console.log("Container dimensions:", { width: containerWidth, height: containerHeight });
+        
         setDimensions({
           width: containerWidth,
-          height: Math.max(450, containerWidth * 0.5) // Responsive height
+          height: containerHeight
         });
       }
     };
@@ -116,26 +129,26 @@ const TimeSeriesChart = ({ data, categories, categoryVisibility }) => {
     console.log("- Data:", data ? `${data.length} items` : "No data");
     console.log("- Categories:", categories ? `${categories.length} items` : "No categories");
     console.log("- CategoryVisibility:", categoryVisibility ? Object.keys(categoryVisibility).length : "No visibility settings");
-
+    
     if (!data || data.length === 0) {
       console.warn("No data provided to TimeSeriesChart");
       return;
     }
-
+    
     if (!categories || categories.length === 0) {
       console.warn("No categories provided to TimeSeriesChart");
       return;
     }
-
+    
     if (!categoryVisibility || Object.keys(categoryVisibility).length === 0) {
       console.warn("No category visibility settings provided to TimeSeriesChart");
       return;
     }
-
+    
     // Check data format
     const firstItem = data[0];
     console.log("First data item sample:", firstItem);
-
+    
     if (!svgRef.current || !tooltipRef.current) {
       console.warn("Refs not initialized");
       return;
@@ -161,7 +174,7 @@ const TimeSeriesChart = ({ data, categories, categoryVisibility }) => {
       // Calculate inner dimensions
       const innerWidth = dimensions.width - margin.left - margin.right;
       const innerHeight = dimensions.height - margin.top - margin.bottom;
-      console.log("Chart dimensions:", { dimensions, innerWidth, innerHeight });
+      console.log("Chart dimensions:", {dimensions, innerWidth, innerHeight});
 
       // Create SVG
       const svg = d3.select(svgRef.current)
@@ -185,9 +198,9 @@ const TimeSeriesChart = ({ data, categories, categoryVisibility }) => {
           }
           return date;
         }).filter(d => d !== null);
-
+        
         console.log("X domain:", xDomain);
-
+        
         if (!xDomain[0] || !xDomain[1]) {
           console.error("Invalid X domain calculated:", xDomain);
           throw new Error("Cannot calculate valid date range for chart");
@@ -212,7 +225,7 @@ const TimeSeriesChart = ({ data, categories, categoryVisibility }) => {
         });
         return sum;
       }) || 0; // Provide default of 0 if result is undefined
-
+      
       console.log("Max Y value:", maxY);
 
       const yScale = d3.scaleLinear()
@@ -316,6 +329,7 @@ const TimeSeriesChart = ({ data, categories, categoryVisibility }) => {
         aggregatedData.forEach(d => {
           const dateObj = { date: d.date };
           let cumulative = 0;
+          let hasAnyValue = false; // Track if we have any non-zero values
 
           // First process parent categories
           rootCategories.forEach(category => {
@@ -323,13 +337,15 @@ const TimeSeriesChart = ({ data, categories, categoryVisibility }) => {
               if (expandedCategories[category.id]) {
                 // If expanded, use the adjusted value (which has children subtracted)
                 const value = d[`category_${category.id}`] || 0;
+                // Include even zero values
+                dateObj[`category_${category.id}`] = {
+                  value,
+                  start: cumulative,
+                  end: cumulative + value,
+                  category
+                };
                 if (value > 0) {
-                  dateObj[`category_${category.id}`] = {
-                    value,
-                    start: cumulative,
-                    end: cumulative + value,
-                    category
-                  };
+                  hasAnyValue = true;
                   cumulative += value;
                 }
 
@@ -338,13 +354,15 @@ const TimeSeriesChart = ({ data, categories, categoryVisibility }) => {
                   category.children.forEach(child => {
                     if (categoryVisibility[child.id]) {
                       const childValue = d[`category_${child.id}`] || 0;
+                      // Include even zero values
+                      dateObj[`category_${child.id}`] = {
+                        value: childValue,
+                        start: cumulative,
+                        end: cumulative + childValue,
+                        category: child
+                      };
                       if (childValue > 0) {
-                        dateObj[`category_${child.id}`] = {
-                          value: childValue,
-                          start: cumulative,
-                          end: cumulative + childValue,
-                          category: child
-                        };
+                        hasAnyValue = true;
                         cumulative += childValue;
                       }
                     }
@@ -353,23 +371,24 @@ const TimeSeriesChart = ({ data, categories, categoryVisibility }) => {
               } else {
                 // If not expanded, use the full value
                 const value = d[`category_${category.id}`] || 0;
+                // Include even zero values
+                dateObj[`category_${category.id}`] = {
+                  value,
+                  start: cumulative,
+                  end: cumulative + value,
+                  category
+                };
                 if (value > 0) {
-                  dateObj[`category_${category.id}`] = {
-                    value,
-                    start: cumulative,
-                    end: cumulative + value,
-                    category
-                  };
+                  hasAnyValue = true;
                   cumulative += value;
                 }
               }
             }
           });
 
-          if (Object.keys(dateObj).length > 1) { // More than just date
-            dateObj.total = cumulative;
-            stackedData.push(dateObj);
-          }
+          // Always add data points even with all zeros
+          dateObj.total = cumulative;
+          stackedData.push(dateObj);
         });
       } catch (error) {
         console.error("Error processing stacked data:", error);
@@ -377,8 +396,22 @@ const TimeSeriesChart = ({ data, categories, categoryVisibility }) => {
       }
 
       console.log(`Created ${stackedData.length} stacked data points`);
-      if (stackedData.length === 0) {
-        console.warn("No stacked data generated");
+      let hasAnyNonZeroData = stackedData.some(d => d.total > 0);
+      console.log("Has any non-zero data:", hasAnyNonZeroData);
+
+      if (!hasAnyNonZeroData) {
+        console.log("All data values are zero - rendering placeholder");
+        
+        // Add a placeholder message on the chart
+        svg.append('text')
+          .attr('x', innerWidth / 2)
+          .attr('y', innerHeight / 2)
+          .attr('text-anchor', 'middle')
+          .attr('font-size', '16px')
+          .attr('fill', 'var(--color-gray-500)')
+          .text('No time data available for the selected period');
+          
+        // Return after drawing axes and placeholder - no need to draw the actual chart
         return;
       }
 
@@ -427,13 +460,7 @@ const TimeSeriesChart = ({ data, categories, categoryVisibility }) => {
             value: d[`category_${categoryId}`]?.value || 0,
             start: d[`category_${categoryId}`]?.start || 0,
             end: d[`category_${categoryId}`]?.end || 0
-          }))
-          .filter(d => d.value > 0);
-
-        if (categoryData.length === 0) {
-          console.log(`No data for category: ${category.name}`);
-          return;
-        }
+          }));
 
         console.log(`Rendering category ${category.name} with ${categoryData.length} data points`);
 
@@ -516,11 +543,11 @@ const TimeSeriesChart = ({ data, categories, categoryVisibility }) => {
 
             // Create tooltip content
             let tooltipContent = `
-            <div class="tooltip-title">
-              ${format(new Date(d.date), 'EEEE, MMMM d, yyyy')}
-            </div>
-            <div>
-          `;
+              <div class="tooltip-title">
+                ${format(new Date(d.date), 'EEEE, MMMM d, yyyy')}
+              </div>
+              <div>
+            `;
 
             // Add each visible category to the tooltip
             let hasData = false;
@@ -531,9 +558,7 @@ const TimeSeriesChart = ({ data, categories, categoryVisibility }) => {
                 const categoryData = d[`category_${category.id}`];
                 const value = categoryData ? categoryData.value : 0;
 
-                if (value > 0) {
-                  hasData = true;
-                  tooltipContent += `
+                tooltipContent += `
                   <div class="tooltip-value" style="margin-bottom: 4px;">
                     <span style="display: flex; align-items: center;">
                       <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background-color: ${category.color}; margin-right: 6px;"></span>
@@ -542,68 +567,69 @@ const TimeSeriesChart = ({ data, categories, categoryVisibility }) => {
                     <span style="font-weight: 600; margin-left: 12px;">${formatTime(value)}</span>
                   </div>
                 `;
+                
+                if (value > 0) {
+                  hasData = true;
+                }
 
-                  // If expanded, add children
-                  if (expandedCategories[category.id] && category.children) {
-                    category.children.forEach(child => {
-                      if (categoryVisibility[child.id]) {
-                        const childData = d[`category_${child.id}`];
-                        const childValue = childData ? childData.value : 0;
+                // If expanded, add children
+                if (expandedCategories[category.id] && category.children) {
+                  category.children.forEach(child => {
+                    if (categoryVisibility[child.id]) {
+                      const childData = d[`category_${child.id}`];
+                      const childValue = childData ? childData.value : 0;
 
-                        if (childValue > 0) {
-                          tooltipContent += `
-                          <div class="tooltip-value" style="margin-left: 16px; margin-bottom: 4px; font-size: 0.8em;">
-                            <span style="display: flex; align-items: center;">
-                              <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: ${child.color}; margin-right: 6px;"></span>
-                              <span>${child.name}:</span>
-                            </span>
-                            <span style="font-weight: 500; margin-left: 12px;">${formatTime(childValue)}</span>
-                          </div>
-                        `;
-                        }
+                      tooltipContent += `
+                        <div class="tooltip-value" style="margin-left: 16px; margin-bottom: 4px; font-size: 0.8em;">
+                          <span style="display: flex; align-items: center;">
+                            <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: ${child.color}; margin-right: 6px;"></span>
+                            <span>${child.name}:</span>
+                          </span>
+                          <span style="font-weight: 500; margin-left: 12px;">${formatTime(childValue)}</span>
+                        </div>
+                      `;
+                      
+                      if (childValue > 0) {
+                        hasData = true;
                       }
-                    });
-                  }
+                    }
+                  });
                 }
               }
             });
 
             // Add total
             tooltipContent += `
-            </div>
-            <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--color-gray-200);">
-              <div class="tooltip-value" style="font-weight: 600;">
-                <span>Total:</span>
-                <span>${formatTime(d.total || 0)}</span>
               </div>
-            </div>
-          `;
+              <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--color-gray-200);">
+                <div class="tooltip-value" style="font-weight: 600;">
+                  <span>Total:</span>
+                  <span>${formatTime(d.total || 0)}</span>
+                </div>
+              </div>
+            `;
 
-            // Only show tooltip if we have data to display
-            if (hasData) {
-              tooltip
-                .style('visibility', 'visible')
-                .html(tooltipContent);
+            // Always show tooltip, even with zeros
+            tooltip
+              .style('visibility', 'visible')
+              .html(tooltipContent);
 
-              // Position tooltip near the mouse but ensure it stays within the viewport
-              const tooltipNode = tooltipRef.current;
-              const tooltipWidth = tooltipNode.getBoundingClientRect().width;
-              const tooltipHeight = tooltipNode.getBoundingClientRect().height;
+            // Position tooltip near the mouse but ensure it stays within the viewport
+            const tooltipNode = tooltipRef.current;
+            const tooltipWidth = tooltipNode.getBoundingClientRect().width;
+            const tooltipHeight = tooltipNode.getBoundingClientRect().height;
 
-              const chartRect = svgRef.current.getBoundingClientRect();
-              const tooltipX = event.clientX - chartRect.left + 10;
-              const tooltipY = event.clientY - chartRect.top - tooltipHeight - 10;
+            const chartRect = svgRef.current.getBoundingClientRect();
+            const tooltipX = event.clientX - chartRect.left + 10;
+            const tooltipY = event.clientY - chartRect.top - tooltipHeight - 10;
 
-              // Adjust if the tooltip would go off the right edge
-              const adjustedX = Math.min(tooltipX, chartRect.width - tooltipWidth - 20);
-              const adjustedY = Math.max(tooltipY, 10); // Ensure it doesn't go off the top
+            // Adjust if the tooltip would go off the right edge
+            const adjustedX = Math.min(tooltipX, chartRect.width - tooltipWidth - 20);
+            const adjustedY = Math.max(tooltipY, 10); // Ensure it doesn't go off the top
 
-              tooltip
-                .style('left', `${adjustedX}px`)
-                .style('top', `${adjustedY}px`);
-            } else {
-              tooltip.style('visibility', 'hidden');
-            }
+            tooltip
+              .style('left', `${adjustedX}px`)
+              .style('top', `${adjustedY}px`);
           } catch (error) {
             console.error("Error handling mouse interaction:", error);
             tooltip.style('visibility', 'hidden');
@@ -618,7 +644,7 @@ const TimeSeriesChart = ({ data, categories, categoryVisibility }) => {
 
   // Helper function to format time
   const formatTime = (minutes) => {
-    if (minutes === undefined || minutes === null) return '-';
+    if (minutes === undefined || minutes === null) return '0m';
 
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
@@ -630,43 +656,6 @@ const TimeSeriesChart = ({ data, categories, categoryVisibility }) => {
     } else {
       return `${hours}h ${mins}m`;
     }
-  };
-
-  const checkProps = (data, categories, categoryVisibility) => {
-    console.log("TimeSeriesChart props check:");
-    console.log("- Data:", data ? `${data.length} items` : "No data");
-    console.log("- Categories:", categories ? `${categories.length} items` : "No categories");
-    console.log("- CategoryVisibility:", categoryVisibility ? Object.keys(categoryVisibility).length : "No visibility settings");
-
-    if (!data || data.length === 0) {
-      console.warn("No data provided to TimeSeriesChart");
-      return false;
-    }
-
-    if (!categories || categories.length === 0) {
-      console.warn("No categories provided to TimeSeriesChart");
-      return false;
-    }
-
-    if (!categoryVisibility || Object.keys(categoryVisibility).length === 0) {
-      console.warn("No category visibility settings provided to TimeSeriesChart");
-      return false;
-    }
-
-    // Check that data has expected format
-    const firstItem = data[0];
-    console.log("First data item:", firstItem);
-
-    const hasCategories = categories.some(cat =>
-      firstItem.hasOwnProperty(`category_${cat.id}`)
-    );
-
-    if (!hasCategories) {
-      console.warn("Data doesn't have expected category properties");
-      return false;
-    }
-
-    return true;
   };
 
   // Render category legend with expand/collapse controls
