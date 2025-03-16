@@ -1421,3 +1421,61 @@ p {
   font-size: 0.875rem;
   color: var(--color-gray-700);
 }
+
+.dashboard-sidebar {
+  background-color: white;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+  height: 100%;
+}
+
+.sidebar-section {
+  padding: 1rem;
+  border-bottom: 1px solid var(--color-gray-200);
+}
+
+.sidebar-section:last-child {
+  border-bottom: none;
+}
+
+.sidebar-heading-wrapper {
+  padding: 1rem 1rem 0.5rem 1rem;
+}
+
+.sidebar-heading {
+  position: relative;
+  padding-left: 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+
+.sidebar-heading::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.2rem;
+  bottom: 0.2rem;
+  width: 3px;
+  background-color: var(--color-primary);
+  border-radius: var(--radius-full);
+}
+
+.sidebar-category {
+  padding: 0.5rem;
+  border-radius: var(--radius-md);
+  background-color: var(--color-gray-50);
+  margin-bottom: 0.5rem;
+}
+
+.sidebar-category:last-child {
+  margin-bottom: 0;
+}
+
+/* Media query for responsive sidebar */
+@media (max-width: 1023px) {
+  .dashboard-sidebar {
+    margin-bottom: 1.5rem;
+  }
+}
