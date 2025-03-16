@@ -24,10 +24,10 @@ const Footer = () => {
               <circle cx="12" cy="12" r="10" />
               <polyline points="12 6 12 12 16 14" />
             </svg>
-
-            <span className="ml-2 text-sm text-gray-600">
-              © {currentYear} WhereTime. All rights reserved.
-            </span>
+            <div className="ml-3">
+              <h3 className="text-lg font-bold text-gray-800">WhereTime</h3>
+              <p className="text-sm text-gray-500">Track your time, improve your life</p>
+            </div>
           </div>
 
           {/* Navigation links */}
