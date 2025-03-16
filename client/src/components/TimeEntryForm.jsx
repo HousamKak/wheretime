@@ -4,9 +4,9 @@ import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
-const TimeEntryForm = ({ categories, onSuccess }) => {
+const TimeEntryForm = ({ categories, onSuccess, compact = false }) => {
   const [isLoading, setIsLoading] = useState(false);
-  const [formVisible, setFormVisible] = useState(false);
+  const [formVisible, setFormVisible] = useState(!compact); // If compact, start collapsed
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
   
@@ -203,11 +203,12 @@ const TimeEntryForm = ({ categories, onSuccess }) => {
     return { parentCategories, childrenMap };
   };
 
+  // Render the component with appropriate styling based on compact mode
   return (
-    <div className="card">
-      <div className="card-header">
+    <div className={compact ? "" : "card"}>
+      <div className={compact ? "sidebar-heading-wrapper" : "card-header"}>
         <div className="flex justify-between items-center">
-          <h2 className="card-title">Log Your Time</h2>
+          <h2 className={compact ? "sidebar-heading" : "card-title"}>Log Your Time</h2>
           <button
             onClick={toggleForm}
             className={`btn btn-sm ${formVisible ? 'btn-outline' : 'btn-primary'}`}
@@ -218,7 +219,7 @@ const TimeEntryForm = ({ categories, onSuccess }) => {
       </div>
       
       {formVisible && (
-        <div className="card-content">
+        <div className={compact ? "" : "card-content"}>
           {error && (
             <div className="alert alert-error mb-4">
               <div className="alert-content">
@@ -248,7 +249,7 @@ const TimeEntryForm = ({ categories, onSuccess }) => {
           )}
           
           <form onSubmit={handleSubmit} className={`${isLoading ? 'form-loading' : ''}`}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div className={`${compact ? "space-y-3" : "grid grid-cols-1 md:grid-cols-2 gap-4 mb-4"}`}>
               {/* Date Selection */}
               <div className="form-group">
                 <label className="form-label">
@@ -360,27 +361,29 @@ const TimeEntryForm = ({ categories, onSuccess }) => {
               )}
             </div>
             
-            {/* Notes */}
-            <div className="form-group mb-4">
-              <label className="form-label">
-                Notes (Optional)
-              </label>
-              <textarea
-                name="notes"
-                value={formData.notes}
-                onChange={handleInputChange}
-                rows="3"
-                className="form-textarea"
-                placeholder="Add any notes about this time entry"
-              ></textarea>
-            </div>
+            {/* Notes - Hide in compact mode */}
+            {!compact && (
+              <div className="form-group mb-4">
+                <label className="form-label">
+                  Notes (Optional)
+                </label>
+                <textarea
+                  name="notes"
+                  value={formData.notes}
+                  onChange={handleInputChange}
+                  rows="3"
+                  className="form-textarea"
+                  placeholder="Add any notes about this time entry"
+                ></textarea>
+              </div>
+            )}
             
             {/* Submit Button */}
-            <div className="flex justify-end">
+            <div className={compact ? "" : "flex justify-end"}>
               <button
                 type="submit"
                 disabled={isLoading}
-                className="btn btn-primary"
+                className={`btn ${compact ? 'w-full' : ''} btn-primary`}
               >
                 {isLoading ? 'Saving...' : 'Save Time Entry'}
               </button>
