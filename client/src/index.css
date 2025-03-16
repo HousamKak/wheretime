@@ -1521,3 +1521,55 @@ p {
     margin-bottom: 1.5rem;
   }
 }
+
+/* Add these styles to your index.css file or create a new CSS file and import it */
+
+.dashboard-container {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: 16px;
+}
+
+@media (min-width: 1024px) {
+  .dashboard-container {
+    flex-direction: row;
+  }
+}
+
+.sidebar-container {
+  width: 100%;
+}
+
+@media (min-width: 1024px) {
+  .sidebar-container {
+    width: 250px;
+    flex-shrink: 0;
+  }
+}
+
+.chart-container-main {
+  width: 100%;
+}
+
+@media (min-width: 1024px) {
+  .chart-container-main {
+    flex: 1;
+    min-width: 0; /* Important for flex items to prevent overflow */
+  }
+}
+
+/* For mobile stacking order, rearrange components when they're vertical */
+@media (max-width: 1023px) {
+  .sidebar-container.left {
+    order: 1;
+  }
+
+  .chart-container-main {
+    order: 0;
+  }
+
+  .sidebar-container.right {
+    order: 2;
+  }
+}

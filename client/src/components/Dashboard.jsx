@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { format, startOfMonth, endOfMonth, subDays, parseISO } from 'date-fns';
 import TimeSeriesChart from './TimeSeriesChart';
 import Sidebar from './Sidebar';
+import CategoryLegend from './CategoryLegend';
 import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -17,6 +18,7 @@ const Dashboard = () => {
   const [totalTime, setTotalTime] = useState(0);
   const [categoryVisibility, setCategoryVisibility] = useState({});
   const [categoryStats, setCategoryStats] = useState([]);
+  const [expandedCategories, setExpandedCategories] = useState({});
   const [error, setError] = useState(null);
   const [presetRange, setPresetRange] = useState('30days');
 
@@ -225,6 +227,14 @@ const Dashboard = () => {
       [categoryId]: !prev[categoryId]
     }));
   };
+  
+  // Toggle category expansion for the chart
+  const toggleCategoryExpansion = (categoryId) => {
+    setExpandedCategories(prev => ({
+      ...prev,
+      [categoryId]: !prev[categoryId]
+    }));
+  };
 
   // Get data for chart (only visible categories)
   const getVisibleTimeData = () => {
@@ -265,6 +275,7 @@ const Dashboard = () => {
             data={getVisibleTimeData()}
             categories={categories}
             categoryVisibility={categoryVisibility}
+            expandedCategories={expandedCategories}
           />
         )}
       </div>
@@ -313,23 +324,73 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="dashboard grid grid-cols-1 lg:grid-cols-4 gap-6">
-      <div className="lg:col-span-1">
-        <Sidebar 
-          dateRange={dateRange}
-          totalTime={totalTime}
-          categoryStats={categoryStats}
-          categories={categories}
-          categoryVisibility={categoryVisibility}
-          onDateRangeChange={handleDateRangeChange}
-          onToggleCategoryVisibility={toggleCategoryVisibility}
-          onPresetChange={handlePresetChange}
-          presetRange={presetRange}
-          handleSuccess={handleSuccess}
-        />
-      </div>
-      <div className="lg:col-span-3">
-        {renderTimeChart()}
+    <div>
+      <style jsx>{`
+        .dashboard-root {
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+          width: 100%;
+        }
+        
+        @media (min-width: 1024px) {
+          .dashboard-root {
+            flex-direction: row;
+          }
+        }
+        
+        .sidebar {
+          width: 100%;
+        }
+        
+        @media (min-width: 1024px) {
+          .sidebar {
+            width: 250px;
+            flex-shrink: 0;
+          }
+        }
+        
+        .main-content {
+          width: 100%;
+        }
+        
+        @media (min-width: 1024px) {
+          .main-content {
+            flex: 1;
+            min-width: 0;
+            margin: 0 16px;
+          }
+        }
+      `}</style>
+      
+      <div className="dashboard-root">
+        <div className="sidebar">
+          <Sidebar 
+            dateRange={dateRange}
+            totalTime={totalTime}
+            categoryStats={categoryStats}
+            categories={categories}
+            categoryVisibility={categoryVisibility}
+            onDateRangeChange={handleDateRangeChange}
+            onToggleCategoryVisibility={toggleCategoryVisibility}
+            onPresetChange={handlePresetChange}
+            presetRange={presetRange}
+            handleSuccess={handleSuccess}
+          />
+        </div>
+        
+        <div className="main-content">
+          {renderTimeChart()}
+        </div>
+        
+        <div className="sidebar">
+          <CategoryLegend 
+            categories={categories}
+            categoryVisibility={categoryVisibility}
+            expandedCategories={expandedCategories}
+            onToggleExpand={toggleCategoryExpansion}
+          />
+        </div>
       </div>
     </div>
   );
