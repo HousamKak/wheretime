@@ -2,11 +2,10 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import * as d3 from 'd3';
 import { format, parseISO } from 'date-fns';
 
-const TimeSeriesChart = ({ data, categories, categoryVisibility }) => {
+const TimeSeriesChart = ({ data, categories, categoryVisibility, expandedCategories = {} }) => {
   const svgRef = useRef();
   const tooltipRef = useRef();
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
-  const [expandedCategories, setExpandedCategories] = useState({});
   const margin = { top: 30, right: 70, bottom: 60, left: 70 };
 
   // Process categories to create hierarchy
@@ -88,14 +87,6 @@ const TimeSeriesChart = ({ data, categories, categoryVisibility }) => {
       return [];
     }
   }, [data, categories, expandedCategories, categoryVisibility, processCategoryHierarchy]);
-
-  // Toggle category expansion
-  const toggleCategoryExpansion = (categoryId) => {
-    setExpandedCategories(prev => ({
-      ...prev,
-      [categoryId]: !prev[categoryId]
-    }));
-  };
 
   // Initialize dimensions on mount and window resize
   useEffect(() => {
@@ -658,87 +649,6 @@ const TimeSeriesChart = ({ data, categories, categoryVisibility }) => {
     }
   };
 
-  // Render category legend with expand/collapse controls
-  const renderCategoryLegend = () => {
-    const { rootCategories } = processCategoryHierarchy();
-
-    console.log("Root categories for legend:", rootCategories);
-
-    if (!rootCategories || rootCategories.length === 0) {
-      return <div className="mt-4">No categories available to display</div>;
-    }
-
-    return (
-      <div className="mt-4 category-legend">
-        <h3 className="text-md font-semibold mb-2">Categories</h3>
-
-        <div className="space-y-2">
-          {rootCategories.map(category => {
-            if (!categoryVisibility[category.id]) return null;
-
-            const isExpanded = expandedCategories[category.id];
-            const hasChildren = category.children && category.children.length > 0;
-
-            return (
-              <div key={category.id} className="category-item">
-                <div
-                  className={`category-graph-header ${isExpanded ? 'active' : ''}`}
-                  onClick={() => hasChildren && toggleCategoryExpansion(category.id)}
-                  style={{ cursor: hasChildren ? 'pointer' : 'default' }}
-                >
-                  {hasChildren && (
-                    <div className={`category-graph-toggle ${isExpanded ? 'open' : ''}`}>
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                        className="w-4 h-4"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                    </div>
-                  )}
-
-                  <div className="category-graph-name">
-                    <span
-                      className="category-graph-color"
-                      style={{ backgroundColor: category.color }}
-                    ></span>
-                    <span>{category.name}</span>
-                  </div>
-                </div>
-
-                {isExpanded && hasChildren && (
-                  <div className="category-graph-children">
-                    {category.children.map(child => {
-                      if (!categoryVisibility[child.id]) return null;
-
-                      return (
-                        <div key={child.id} className="subcategory-header">
-                          <div className="subcategory-name">
-                            <span
-                              className="subcategory-color"
-                              style={{ backgroundColor: child.color }}
-                            ></span>
-                            <span>{child.name}</span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    );
-  };
-
   // Placeholder when no data is available
   if (!data || data.length === 0) {
     return (
@@ -758,7 +668,6 @@ const TimeSeriesChart = ({ data, categories, categoryVisibility }) => {
         <svg ref={svgRef} className="w-full"></svg>
         <div ref={tooltipRef} className="tooltip"></div>
       </div>
-      {renderCategoryLegend()}
     </div>
   );
 };

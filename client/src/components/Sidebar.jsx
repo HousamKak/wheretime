@@ -134,94 +134,17 @@ const Sidebar = ({
         <div className="text-sm mb-2">Daily Average: {formatTime(Math.round(totalTime / Math.max(1, 
           (new Date(dateRange.endDate) - new Date(dateRange.startDate)) / (1000 * 60 * 60 * 24) + 1
         )))}</div>
-
-        <h3 className="font-medium text-sm mt-4 mb-2">Category Breakdown</h3>
-
-        {rootCategories.length === 0 ? (
-          <p className="text-gray-500 italic text-sm">No data for the selected period</p>
-        ) : (
-          <div className="space-y-2">
-            {rootCategories.map(category => {
-              const children = childrenMap[category.id] || [];
-
-              return (
-                <div key={category.id} className="sidebar-category">
-                  <div className="flex items-center justify-between mb-1">
-                    <div className="flex items-center">
-                      <span
-                        className="inline-block w-2 h-2 mr-2 rounded-full"
-                        style={{ backgroundColor: category.color }}
-                      ></span>
-                      <span className="text-sm font-medium">{category.name}</span>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-xs font-semibold">{formatTime(category.totalTime)}</div>
-                      <div className="text-xs text-gray-500">{category.percentage}%</div>
-                    </div>
-                  </div>
-
-                  {children.length > 0 && (
-                    <div className="pl-3 mt-1 border-l border-gray-200">
-                      {children.map(child => (
-                        <div key={child.id} className="flex items-center justify-between py-1">
-                          <div className="flex items-center">
-                            <span
-                              className="inline-block w-1.5 h-1.5 mr-1.5 rounded-full"
-                              style={{ backgroundColor: child.color }}
-                            ></span>
-                            <span className="text-xs">{child.name}</span>
-                          </div>
-                          <div className="text-right">
-                            <div className="text-xs font-medium">{formatTime(child.totalTime)}</div>
-                            <div className="text-xs text-gray-500">{child.percentage}%</div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
+        
       </div>
     );
   };
 
-  // Render category toggles
-  const renderCategoryToggles = () => (
-    <div className="sidebar-section">
-      <h2 className="sidebar-heading">Toggle Categories</h2>
-      <div className="grid grid-cols-1 gap-1">
-        {categories
-          .filter(category => !category.parent_id)
-          .map(category => (
-            <div key={category.id} className="flex items-center">
-              <label className="flex items-center cursor-pointer space-x-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={categoryVisibility[category.id] !== false}
-                  onChange={() => onToggleCategoryVisibility(category.id)}
-                  className="form-checkbox"
-                />
-                <span
-                  className="inline-block w-2 h-2 rounded-full"
-                  style={{ backgroundColor: category.color }}
-                ></span>
-                <span>{category.name}</span>
-              </label>
-            </div>
-          ))}
-      </div>
-    </div>
-  );
-
+  // Render category to
   return (
     <div className="dashboard-sidebar">
       {renderDateSelector()}
       {renderTimeEntryForm()}
       {renderStatsSummary()}
-      {renderCategoryToggles()}
     </div>
   );
 };
