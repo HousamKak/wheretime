@@ -111,419 +111,509 @@ const TimeSeriesChart = ({ data, categories, categoryVisibility }) => {
 
   // Create chart whenever data, dimensions, or visibility changes
   useEffect(() => {
-
-    console.log("TimeSeriesChart received data:", data);
-    console.log("Categories:", categories);
-    console.log("Visibility:", categoryVisibility);
+    // First check if we have valid props
+    console.log("TimeSeriesChart props check:");
+    console.log("- Data:", data ? `${data.length} items` : "No data");
+    console.log("- Categories:", categories ? `${categories.length} items` : "No categories");
+    console.log("- CategoryVisibility:", categoryVisibility ? Object.keys(categoryVisibility).length : "No visibility settings");
 
     if (!data || data.length === 0) {
-      console.log("No data for chart");
+      console.warn("No data provided to TimeSeriesChart");
       return;
     }
 
     if (!categories || categories.length === 0) {
-      console.log("No categories for chart");
+      console.warn("No categories provided to TimeSeriesChart");
       return;
     }
+
+    if (!categoryVisibility || Object.keys(categoryVisibility).length === 0) {
+      console.warn("No category visibility settings provided to TimeSeriesChart");
+      return;
+    }
+
+    // Check data format
+    const firstItem = data[0];
+    console.log("First data item sample:", firstItem);
 
     if (!svgRef.current || !tooltipRef.current) {
-      console.log("Refs not initialized");
+      console.warn("Refs not initialized");
       return;
     }
 
-    // Clear previous chart
-    d3.select(svgRef.current).selectAll('*').remove();
+    try {
+      // Clear previous chart
+      d3.select(svgRef.current).selectAll('*').remove();
 
-    // Process categories
-    const { rootCategories } = processCategoryHierarchy();
+      // Process categories
+      const { rootCategories } = processCategoryHierarchy();
+      console.log("Processed root categories:", rootCategories);
 
-    // Get aggregated data that accounts for expanded categories
-    const aggregatedData = calculateAggregatedData();
+      // Get aggregated data that accounts for expanded categories
+      const aggregatedData = calculateAggregatedData();
+      console.log("Aggregated data sample (first 2 items):", aggregatedData.slice(0, 2));
 
-    // Calculate inner dimensions
-    const innerWidth = dimensions.width - margin.left - margin.right;
-    const innerHeight = dimensions.height - margin.top - margin.bottom;
+      if (aggregatedData.length === 0) {
+        console.warn("No data after aggregation");
+        return;
+      }
 
-    // Create SVG
-    const svg = d3.select(svgRef.current)
-      .attr('width', dimensions.width)
-      .attr('height', dimensions.height)
-      .append('g')
-      .attr('transform', `translate(${margin.left},${margin.top})`);
+      // Calculate inner dimensions
+      const innerWidth = dimensions.width - margin.left - margin.right;
+      const innerHeight = dimensions.height - margin.top - margin.bottom;
+      console.log("Chart dimensions:", { dimensions, innerWidth, innerHeight });
 
-    // Create scales
-    const xScale = d3.scaleTime()
-      .domain(d3.extent(aggregatedData, d => new Date(d.date)))
-      .range([0, innerWidth])
-      .nice();
+      // Create SVG
+      const svg = d3.select(svgRef.current)
+        .attr('width', dimensions.width)
+        .attr('height', dimensions.height)
+        .append('g')
+        .attr('transform', `translate(${margin.left},${margin.top})`);
 
-    // Find max y value across all visible categories
-    const maxY = d3.max(aggregatedData, d => {
-      let sum = 0;
-      categories.forEach(category => {
-        if (categoryVisibility[category.id]) {
-          sum += d[`category_${category.id}`] || 0;
+      // Create scales
+      let xDomain;
+      try {
+        xDomain = d3.extent(aggregatedData, d => {
+          if (!d.date) {
+            console.warn("Data item missing date:", d);
+            return null;
+          }
+          const date = new Date(d.date);
+          if (isNaN(date.getTime())) {
+            console.warn(`Invalid date found: ${d.date}`);
+            return null;
+          }
+          return date;
+        }).filter(d => d !== null);
+
+        console.log("X domain:", xDomain);
+
+        if (!xDomain[0] || !xDomain[1]) {
+          console.error("Invalid X domain calculated:", xDomain);
+          throw new Error("Cannot calculate valid date range for chart");
         }
-      });
-      return sum;
-    });
+      } catch (error) {
+        console.error("Error calculating X domain:", error);
+        return;
+      }
 
-    const yScale = d3.scaleLinear()
-      .domain([0, maxY * 1.1]) // Add 10% padding at the top
-      .range([innerHeight, 0])
-      .nice();
+      const xScale = d3.scaleTime()
+        .domain(xDomain)
+        .range([0, innerWidth])
+        .nice();
 
-    // Create axes
-    const xAxis = d3.axisBottom(xScale)
-      .ticks(Math.min(aggregatedData.length, innerWidth / 80)) // Responsive number of ticks
-      .tickFormat(d => format(d, 'MMM d'));
+      // Find max y value across all visible categories
+      const maxY = d3.max(aggregatedData, d => {
+        let sum = 0;
+        categories.forEach(category => {
+          if (categoryVisibility[category.id]) {
+            sum += d[`category_${category.id}`] || 0;
+          }
+        });
+        return sum;
+      }) || 0; // Provide default of 0 if result is undefined
 
-    const yAxis = d3.axisLeft(yScale)
-      .ticks(8)
-      .tickFormat(d => {
-        if (d >= 60) {
-          const hours = Math.floor(d / 60);
-          const minutes = d % 60;
-          return `${hours}h${minutes > 0 ? ` ${minutes}m` : ''}`;
-        }
-        return `${d}m`;
-      });
+      console.log("Max Y value:", maxY);
 
-    // Add gridlines
-    svg.append('g')
-      .attr('class', 'grid')
-      .attr('transform', `translate(0,${innerHeight})`)
-      .call(d3.axisBottom(xScale)
-        .ticks(10)
-        .tickSize(-innerHeight)
-        .tickFormat('')
-      )
-      .attr('stroke-opacity', 0.1);
+      const yScale = d3.scaleLinear()
+        .domain([0, maxY > 0 ? maxY * 1.1 : 10]) // Add 10% padding or use default of 10 if no data
+        .range([innerHeight, 0])
+        .nice();
 
-    svg.append('g')
-      .attr('class', 'grid')
-      .call(d3.axisLeft(yScale)
+      // Create axes
+      const xAxis = d3.axisBottom(xScale)
+        .ticks(Math.min(aggregatedData.length, innerWidth / 80)) // Responsive number of ticks
+        .tickFormat(d => format(d, 'MMM d'));
+
+      const yAxis = d3.axisLeft(yScale)
         .ticks(8)
-        .tickSize(-innerWidth)
-        .tickFormat('')
-      )
-      .attr('stroke-opacity', 0.1);
+        .tickFormat(d => {
+          if (d >= 60) {
+            const hours = Math.floor(d / 60);
+            const minutes = d % 60;
+            return `${hours}h${minutes > 0 ? ` ${minutes}m` : ''}`;
+          }
+          return `${d}m`;
+        });
 
-    // Add axes
-    svg.append('g')
-      .attr('transform', `translate(0,${innerHeight})`)
-      .call(xAxis)
-      .attr('font-size', '12px')
-      .attr('color', 'var(--color-gray-600)')
-      .selectAll('text')
-      .attr('transform', 'rotate(-30)')
-      .style('text-anchor', 'end');
+      // Add gridlines
+      svg.append('g')
+        .attr('class', 'grid')
+        .attr('transform', `translate(0,${innerHeight})`)
+        .call(d3.axisBottom(xScale)
+          .ticks(10)
+          .tickSize(-innerHeight)
+          .tickFormat('')
+        )
+        .attr('stroke-opacity', 0.1);
 
-    svg.append('g')
-      .call(yAxis)
-      .attr('font-size', '12px')
-      .attr('color', 'var(--color-gray-600)');
+      svg.append('g')
+        .attr('class', 'grid')
+        .call(d3.axisLeft(yScale)
+          .ticks(8)
+          .tickSize(-innerWidth)
+          .tickFormat('')
+        )
+        .attr('stroke-opacity', 0.1);
 
-    // Prepare tooltip
-    const tooltip = d3.select(tooltipRef.current)
-      .attr('class', 'tooltip')
-      .style('position', 'absolute')
-      .style('visibility', 'hidden')
-      .style('z-index', '100');
+      // Add axes
+      svg.append('g')
+        .attr('transform', `translate(0,${innerHeight})`)
+        .call(xAxis)
+        .attr('font-size', '12px')
+        .attr('color', 'var(--color-gray-600)')
+        .selectAll('text')
+        .attr('transform', 'rotate(-30)')
+        .style('text-anchor', 'end');
 
-    // Add axis labels
-    svg.append('text')
-      .attr('x', -innerHeight / 2)
-      .attr('y', -margin.left + 15)
-      .attr('transform', 'rotate(-90)')
-      .attr('text-anchor', 'middle')
-      .attr('font-size', '14px')
-      .attr('fill', 'var(--color-gray-700)')
-      .text('Time Spent (hours/minutes)');
+      svg.append('g')
+        .call(yAxis)
+        .attr('font-size', '12px')
+        .attr('color', 'var(--color-gray-600)');
 
-    svg.append('text')
-      .attr('x', innerWidth / 2)
-      .attr('y', innerHeight + margin.bottom - 10)
-      .attr('text-anchor', 'middle')
-      .attr('font-size', '14px')
-      .attr('fill', 'var(--color-gray-700)')
-      .text('Date');
+      // Prepare tooltip
+      const tooltip = d3.select(tooltipRef.current)
+        .attr('class', 'tooltip')
+        .style('position', 'absolute')
+        .style('visibility', 'hidden')
+        .style('z-index', '100');
 
-    // Create area generator and line generator
-    const areaGenerator = d3.area()
-      .x(d => xScale(new Date(d.date)))
-      .y0(innerHeight)
-      .y1(d => yScale(d.value))
-      .curve(d3.curveMonotoneX);
+      // Add axis labels
+      svg.append('text')
+        .attr('x', -innerHeight / 2)
+        .attr('y', -margin.left + 15)
+        .attr('transform', 'rotate(-90)')
+        .attr('text-anchor', 'middle')
+        .attr('font-size', '14px')
+        .attr('fill', 'var(--color-gray-700)')
+        .text('Time Spent (hours/minutes)');
 
-    const lineGenerator = d3.line()
-      .x(d => xScale(new Date(d.date)))
-      .y(d => yScale(d.value))
-      .curve(d3.curveMonotoneX);
+      svg.append('text')
+        .attr('x', innerWidth / 2)
+        .attr('y', innerHeight + margin.bottom - 10)
+        .attr('text-anchor', 'middle')
+        .attr('font-size', '14px')
+        .attr('fill', 'var(--color-gray-700)')
+        .text('Date');
 
-    // Define a stack generator to create stacked areas
-    const stackedData = [];
+      // Create area generator and line generator
+      const areaGenerator = d3.area()
+        .x(d => xScale(new Date(d.date)))
+        .y0(innerHeight)
+        .y1(d => yScale(d.value))
+        .curve(d3.curveMonotoneX);
 
-    // For each date, create an array of category values for visible categories
-    aggregatedData.forEach(d => {
-      const dateObj = { date: d.date };
-      let cumulative = 0;
+      const lineGenerator = d3.line()
+        .x(d => xScale(new Date(d.date)))
+        .y(d => yScale(d.value))
+        .curve(d3.curveMonotoneX);
 
-      // First process parent categories
+      // Define a stack generator to create stacked areas
+      const stackedData = [];
+
+      // For each date, create an array of category values for visible categories
+      try {
+        aggregatedData.forEach(d => {
+          const dateObj = { date: d.date };
+          let cumulative = 0;
+
+          // First process parent categories
+          rootCategories.forEach(category => {
+            if (categoryVisibility[category.id]) {
+              if (expandedCategories[category.id]) {
+                // If expanded, use the adjusted value (which has children subtracted)
+                const value = d[`category_${category.id}`] || 0;
+                if (value > 0) {
+                  dateObj[`category_${category.id}`] = {
+                    value,
+                    start: cumulative,
+                    end: cumulative + value,
+                    category
+                  };
+                  cumulative += value;
+                }
+
+                // Add children separately
+                if (category.children && category.children.length > 0) {
+                  category.children.forEach(child => {
+                    if (categoryVisibility[child.id]) {
+                      const childValue = d[`category_${child.id}`] || 0;
+                      if (childValue > 0) {
+                        dateObj[`category_${child.id}`] = {
+                          value: childValue,
+                          start: cumulative,
+                          end: cumulative + childValue,
+                          category: child
+                        };
+                        cumulative += childValue;
+                      }
+                    }
+                  });
+                }
+              } else {
+                // If not expanded, use the full value
+                const value = d[`category_${category.id}`] || 0;
+                if (value > 0) {
+                  dateObj[`category_${category.id}`] = {
+                    value,
+                    start: cumulative,
+                    end: cumulative + value,
+                    category
+                  };
+                  cumulative += value;
+                }
+              }
+            }
+          });
+
+          if (Object.keys(dateObj).length > 1) { // More than just date
+            dateObj.total = cumulative;
+            stackedData.push(dateObj);
+          }
+        });
+      } catch (error) {
+        console.error("Error processing stacked data:", error);
+        return;
+      }
+
+      console.log(`Created ${stackedData.length} stacked data points`);
+      if (stackedData.length === 0) {
+        console.warn("No stacked data generated");
+        return;
+      }
+
+      // Generate an array of all category IDs to display
+      const visibleCategoryIds = [];
+
+      // First add parent categories
       rootCategories.forEach(category => {
         if (categoryVisibility[category.id]) {
-          if (expandedCategories[category.id]) {
-            // If expanded, use the adjusted value (which has children subtracted)
-            const value = d[`category_${category.id}`] || 0;
-            if (value > 0) {
-              dateObj[`category_${category.id}`] = {
-                value,
-                start: cumulative,
-                end: cumulative + value,
-                category
-              };
-              cumulative += value;
-            }
+          visibleCategoryIds.push(category.id);
 
-            // Add children separately
+          // If expanded, add children
+          if (expandedCategories[category.id] && category.children) {
             category.children.forEach(child => {
               if (categoryVisibility[child.id]) {
-                const childValue = d[`category_${child.id}`] || 0;
-                if (childValue > 0) {
-                  dateObj[`category_${child.id}`] = {
-                    value: childValue,
-                    start: cumulative,
-                    end: cumulative + childValue,
-                    category: child
-                  };
-                  cumulative += childValue;
+                visibleCategoryIds.push(child.id);
+              }
+            });
+          }
+        }
+      });
+
+      console.log("Visible category IDs:", visibleCategoryIds);
+      if (visibleCategoryIds.length === 0) {
+        console.warn("No visible categories");
+        // Draw empty chart with axes only
+        return;
+      }
+
+      // Reverse to draw from bottom to top (for proper stacking)
+      visibleCategoryIds.reverse();
+
+      // Draw stacked areas
+      visibleCategoryIds.forEach(categoryId => {
+        // Get category data
+        const category = categories.find(c => c.id === categoryId);
+        if (!category) {
+          console.warn(`Category ID ${categoryId} not found in categories`);
+          return;
+        }
+
+        // Extract data points for this category
+        const categoryData = stackedData
+          .map(d => ({
+            date: d.date,
+            value: d[`category_${categoryId}`]?.value || 0,
+            start: d[`category_${categoryId}`]?.start || 0,
+            end: d[`category_${categoryId}`]?.end || 0
+          }))
+          .filter(d => d.value > 0);
+
+        if (categoryData.length === 0) {
+          console.log(`No data for category: ${category.name}`);
+          return;
+        }
+
+        console.log(`Rendering category ${category.name} with ${categoryData.length} data points`);
+
+        try {
+          // Create custom area generator for stacked areas
+          const stackedAreaGenerator = d3.area()
+            .x(d => xScale(new Date(d.date)))
+            .y0(d => yScale(d.start))
+            .y1(d => yScale(d.end))
+            .curve(d3.curveMonotoneX);
+
+          // Add the stacked area
+          svg.append('path')
+            .datum(categoryData)
+            .attr('fill', category.color || '#ccc')
+            .attr('fill-opacity', 0.7)
+            .attr('d', stackedAreaGenerator);
+
+          // Add the top line
+          svg.append('path')
+            .datum(categoryData)
+            .attr('fill', 'none')
+            .attr('stroke', category.color || '#ccc')
+            .attr('stroke-width', 2)
+            .attr('d', d3.line()
+              .x(d => xScale(new Date(d.date)))
+              .y(d => yScale(d.end))
+              .curve(d3.curveMonotoneX)
+            );
+        } catch (error) {
+          console.error(`Error rendering category ${category.name}:`, error);
+        }
+      });
+
+      // Create overlay for hover interactions across the entire chart
+      const focus = svg.append('g')
+        .attr('class', 'focus')
+        .style('display', 'none');
+
+      focus.append('line')
+        .attr('class', 'x-hover-line')
+        .attr('y1', 0)
+        .attr('y2', innerHeight)
+        .attr('stroke', 'var(--color-gray-400)')
+        .attr('stroke-width', 1)
+        .attr('stroke-dasharray', '3,3');
+
+      // Create overlay rect for mouse tracking
+      svg.append('rect')
+        .attr('class', 'overlay')
+        .attr('width', innerWidth)
+        .attr('height', innerHeight)
+        .attr('fill', 'none')
+        .attr('pointer-events', 'all')
+        .on('mouseover', () => focus.style('display', null))
+        .on('mouseout', () => {
+          focus.style('display', 'none');
+          tooltip.style('visibility', 'hidden');
+        })
+        .on('mousemove', function (event) {
+          try {
+            // Get x position of mouse
+            const [mouseX] = d3.pointer(event, this);
+            const x0 = xScale.invert(mouseX);
+
+            // Find the closest date
+            const bisectDate = d3.bisector(d => new Date(d.date)).left;
+            const index = bisectDate(stackedData, x0, 1);
+            if (index >= stackedData.length) return;
+
+            const d0 = stackedData[Math.max(0, index - 1)];
+            const d1 = stackedData[index];
+
+            if (!d0 || !d1) return;
+
+            const d = x0 - new Date(d0.date) > new Date(d1.date) - x0 ? d1 : d0;
+
+            // Position the vertical line
+            focus.attr('transform', `translate(${xScale(new Date(d.date))},0)`);
+
+            // Create tooltip content
+            let tooltipContent = `
+            <div class="tooltip-title">
+              ${format(new Date(d.date), 'EEEE, MMMM d, yyyy')}
+            </div>
+            <div>
+          `;
+
+            // Add each visible category to the tooltip
+            let hasData = false;
+
+            // First add parent categories
+            rootCategories.forEach(category => {
+              if (categoryVisibility[category.id]) {
+                const categoryData = d[`category_${category.id}`];
+                const value = categoryData ? categoryData.value : 0;
+
+                if (value > 0) {
+                  hasData = true;
+                  tooltipContent += `
+                  <div class="tooltip-value" style="margin-bottom: 4px;">
+                    <span style="display: flex; align-items: center;">
+                      <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background-color: ${category.color}; margin-right: 6px;"></span>
+                      <span>${category.name}:</span>
+                    </span>
+                    <span style="font-weight: 600; margin-left: 12px;">${formatTime(value)}</span>
+                  </div>
+                `;
+
+                  // If expanded, add children
+                  if (expandedCategories[category.id] && category.children) {
+                    category.children.forEach(child => {
+                      if (categoryVisibility[child.id]) {
+                        const childData = d[`category_${child.id}`];
+                        const childValue = childData ? childData.value : 0;
+
+                        if (childValue > 0) {
+                          tooltipContent += `
+                          <div class="tooltip-value" style="margin-left: 16px; margin-bottom: 4px; font-size: 0.8em;">
+                            <span style="display: flex; align-items: center;">
+                              <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: ${child.color}; margin-right: 6px;"></span>
+                              <span>${child.name}:</span>
+                            </span>
+                            <span style="font-weight: 500; margin-left: 12px;">${formatTime(childValue)}</span>
+                          </div>
+                        `;
+                        }
+                      }
+                    });
+                  }
                 }
               }
             });
-          } else {
-            // If not expanded, use the full value
-            const value = d[`category_${category.id}`] || 0;
-            if (value > 0) {
-              dateObj[`category_${category.id}`] = {
-                value,
-                start: cumulative,
-                end: cumulative + value,
-                category
-              };
-              cumulative += value;
+
+            // Add total
+            tooltipContent += `
+            </div>
+            <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--color-gray-200);">
+              <div class="tooltip-value" style="font-weight: 600;">
+                <span>Total:</span>
+                <span>${formatTime(d.total || 0)}</span>
+              </div>
+            </div>
+          `;
+
+            // Only show tooltip if we have data to display
+            if (hasData) {
+              tooltip
+                .style('visibility', 'visible')
+                .html(tooltipContent);
+
+              // Position tooltip near the mouse but ensure it stays within the viewport
+              const tooltipNode = tooltipRef.current;
+              const tooltipWidth = tooltipNode.getBoundingClientRect().width;
+              const tooltipHeight = tooltipNode.getBoundingClientRect().height;
+
+              const chartRect = svgRef.current.getBoundingClientRect();
+              const tooltipX = event.clientX - chartRect.left + 10;
+              const tooltipY = event.clientY - chartRect.top - tooltipHeight - 10;
+
+              // Adjust if the tooltip would go off the right edge
+              const adjustedX = Math.min(tooltipX, chartRect.width - tooltipWidth - 20);
+              const adjustedY = Math.max(tooltipY, 10); // Ensure it doesn't go off the top
+
+              tooltip
+                .style('left', `${adjustedX}px`)
+                .style('top', `${adjustedY}px`);
+            } else {
+              tooltip.style('visibility', 'hidden');
             }
-          }
-        }
-      });
-
-      if (Object.keys(dateObj).length > 1) { // More than just date
-        dateObj.total = cumulative;
-        stackedData.push(dateObj);
-      }
-    });
-
-    // Generate an array of all category IDs to display
-    const visibleCategoryIds = [];
-
-    // First add parent categories
-    rootCategories.forEach(category => {
-      if (categoryVisibility[category.id]) {
-        visibleCategoryIds.push(category.id);
-
-        // If expanded, add children
-        if (expandedCategories[category.id]) {
-          category.children.forEach(child => {
-            if (categoryVisibility[child.id]) {
-              visibleCategoryIds.push(child.id);
-            }
-          });
-        }
-      }
-    });
-
-    // Reverse to draw from bottom to top (for proper stacking)
-    visibleCategoryIds.reverse();
-
-    // Draw stacked areas
-    visibleCategoryIds.forEach(categoryId => {
-      // Get category data
-      const category = categories.find(c => c.id === categoryId);
-      if (!category) return;
-
-      // Extract data points for this category
-      const categoryData = stackedData.map(d => ({
-        date: d.date,
-        value: d[`category_${categoryId}`]?.value || 0,
-        start: d[`category_${categoryId}`]?.start || 0,
-        end: d[`category_${categoryId}`]?.end || 0
-      })).filter(d => d.value > 0);
-
-      if (categoryData.length === 0) return;
-
-      // Create custom area generator for stacked areas
-      const stackedAreaGenerator = d3.area()
-        .x(d => xScale(new Date(d.date)))
-        .y0(d => yScale(d.start))
-        .y1(d => yScale(d.end))
-        .curve(d3.curveMonotoneX);
-
-      // Add the stacked area
-      svg.append('path')
-        .datum(categoryData)
-        .attr('fill', category.color)
-        .attr('fill-opacity', 0.7)
-        .attr('d', stackedAreaGenerator);
-
-      // Add the top line
-      svg.append('path')
-        .datum(categoryData)
-        .attr('fill', 'none')
-        .attr('stroke', category.color)
-        .attr('stroke-width', 2)
-        .attr('d', d3.line()
-          .x(d => xScale(new Date(d.date)))
-          .y(d => yScale(d.end))
-          .curve(d3.curveMonotoneX)
-        );
-    });
-
-    // Create overlay for hover interactions across the entire chart
-    const focus = svg.append('g')
-      .attr('class', 'focus')
-      .style('display', 'none');
-
-    focus.append('line')
-      .attr('class', 'x-hover-line')
-      .attr('y1', 0)
-      .attr('y2', innerHeight)
-      .attr('stroke', 'var(--color-gray-400)')
-      .attr('stroke-width', 1)
-      .attr('stroke-dasharray', '3,3');
-
-    // Create overlay rect for mouse tracking
-    svg.append('rect')
-      .attr('class', 'overlay')
-      .attr('width', innerWidth)
-      .attr('height', innerHeight)
-      .attr('fill', 'none')
-      .attr('pointer-events', 'all')
-      .on('mouseover', () => focus.style('display', null))
-      .on('mouseout', () => {
-        focus.style('display', 'none');
-        tooltip.style('visibility', 'hidden');
-      })
-      .on('mousemove', function (event) {
-        // Get x position of mouse
-        const [mouseX] = d3.pointer(event, this);
-        const x0 = xScale.invert(mouseX);
-
-        // Find the closest date
-        const bisectDate = d3.bisector(d => new Date(d.date)).left;
-        const index = bisectDate(stackedData, x0, 1);
-        if (index >= stackedData.length) return;
-
-        const d0 = stackedData[Math.max(0, index - 1)];
-        const d1 = stackedData[index];
-
-        if (!d0 || !d1) return;
-
-        const d = x0 - new Date(d0.date) > new Date(d1.date) - x0 ? d1 : d0;
-
-        // Position the vertical line
-        focus.attr('transform', `translate(${xScale(new Date(d.date))},0)`);
-
-        // Create tooltip content
-        let tooltipContent = `
-          <div class="tooltip-title">
-            ${format(new Date(d.date), 'EEEE, MMMM d, yyyy')}
-          </div>
-          <div>
-        `;
-
-        // Add each visible category to the tooltip
-        let hasData = false;
-
-        // First add parent categories
-        rootCategories.forEach(category => {
-          if (categoryVisibility[category.id]) {
-            const categoryData = d[`category_${category.id}`];
-            const value = categoryData ? categoryData.value : 0;
-
-            if (value > 0) {
-              hasData = true;
-              tooltipContent += `
-                <div class="tooltip-value" style="margin-bottom: 4px;">
-                  <span style="display: flex; align-items: center;">
-                    <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background-color: ${category.color}; margin-right: 6px;"></span>
-                    <span>${category.name}:</span>
-                  </span>
-                  <span style="font-weight: 600; margin-left: 12px;">${formatTime(value)}</span>
-                </div>
-              `;
-
-              // If expanded, add children
-              if (expandedCategories[category.id]) {
-                category.children.forEach(child => {
-                  if (categoryVisibility[child.id]) {
-                    const childData = d[`category_${child.id}`];
-                    const childValue = childData ? childData.value : 0;
-
-                    if (childValue > 0) {
-                      tooltipContent += `
-                        <div class="tooltip-value" style="margin-left: 16px; margin-bottom: 4px; font-size: 0.8em;">
-                          <span style="display: flex; align-items: center;">
-                            <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: ${child.color}; margin-right: 6px;"></span>
-                            <span>${child.name}:</span>
-                          </span>
-                          <span style="font-weight: 500; margin-left: 12px;">${formatTime(childValue)}</span>
-                        </div>
-                      `;
-                    }
-                  }
-                });
-              }
-            }
+          } catch (error) {
+            console.error("Error handling mouse interaction:", error);
+            tooltip.style('visibility', 'hidden');
           }
         });
 
-        // Add total
-        tooltipContent += `
-          </div>
-          <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--color-gray-200);">
-            <div class="tooltip-value" style="font-weight: 600;">
-              <span>Total:</span>
-              <span>${formatTime(d.total || 0)}</span>
-            </div>
-          </div>
-        `;
-
-        // Only show tooltip if we have data to display
-        if (hasData) {
-          tooltip
-            .style('visibility', 'visible')
-            .html(tooltipContent);
-
-          // Position tooltip near the mouse but ensure it stays within the viewport
-          const tooltipNode = tooltipRef.current;
-          const tooltipWidth = tooltipNode.getBoundingClientRect().width;
-          const tooltipHeight = tooltipNode.getBoundingClientRect().height;
-
-          const chartRect = svgRef.current.getBoundingClientRect();
-          const tooltipX = event.clientX - chartRect.left + 10;
-          const tooltipY = event.clientY - chartRect.top - tooltipHeight - 10;
-
-          // Adjust if the tooltip would go off the right edge
-          const adjustedX = Math.min(tooltipX, chartRect.width - tooltipWidth - 20);
-          const adjustedY = Math.max(tooltipY, 10); // Ensure it doesn't go off the top
-
-          tooltip
-            .style('left', `${adjustedX}px`)
-            .style('top', `${adjustedY}px`);
-        } else {
-          tooltip.style('visibility', 'hidden');
-        }
-      });
-
+      console.log("Chart render complete");
+    } catch (error) {
+      console.error("Error creating chart:", error);
+    }
   }, [data, dimensions, categories, categoryVisibility, expandedCategories, processCategoryHierarchy, calculateAggregatedData]);
 
   // Helper function to format time
@@ -540,6 +630,43 @@ const TimeSeriesChart = ({ data, categories, categoryVisibility }) => {
     } else {
       return `${hours}h ${mins}m`;
     }
+  };
+
+  const checkProps = (data, categories, categoryVisibility) => {
+    console.log("TimeSeriesChart props check:");
+    console.log("- Data:", data ? `${data.length} items` : "No data");
+    console.log("- Categories:", categories ? `${categories.length} items` : "No categories");
+    console.log("- CategoryVisibility:", categoryVisibility ? Object.keys(categoryVisibility).length : "No visibility settings");
+
+    if (!data || data.length === 0) {
+      console.warn("No data provided to TimeSeriesChart");
+      return false;
+    }
+
+    if (!categories || categories.length === 0) {
+      console.warn("No categories provided to TimeSeriesChart");
+      return false;
+    }
+
+    if (!categoryVisibility || Object.keys(categoryVisibility).length === 0) {
+      console.warn("No category visibility settings provided to TimeSeriesChart");
+      return false;
+    }
+
+    // Check that data has expected format
+    const firstItem = data[0];
+    console.log("First data item:", firstItem);
+
+    const hasCategories = categories.some(cat =>
+      firstItem.hasOwnProperty(`category_${cat.id}`)
+    );
+
+    if (!hasCategories) {
+      console.warn("Data doesn't have expected category properties");
+      return false;
+    }
+
+    return true;
   };
 
   // Render category legend with expand/collapse controls

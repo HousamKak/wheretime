@@ -85,36 +85,71 @@ const Dashboard = () => {
 
   // Process time log data for the chart
   const processTimeData = (logs) => {
+    console.log("Processing time data with logs:", logs);
+    console.log("Current categories:", categories);
+    console.log("Date range:", dateRange);
+
+    if (!logs || logs.length === 0) {
+      console.log("No logs to process");
+      // Return a minimal dataset instead of empty array to avoid D3 errors
+      const emptyData = [];
+      const start = new Date(dateRange.startDate);
+      const end = new Date(dateRange.endDate);
+
+      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        const dateStr = format(d, 'yyyy-MM-dd');
+        const entry = { date: dateStr };
+        categories.forEach(category => {
+          entry[`category_${category.id}`] = 0;
+        });
+        emptyData.push(entry);
+      }
+
+      return emptyData;
+    }
+
     // Create a map to group by date
     const dateMap = new Map();
 
-    // Initialize with all dates in the range, even if no data
-    const start = new Date(dateRange.startDate);
-    const end = new Date(dateRange.endDate);
+    try {
+      // Initialize with all dates in the range, even if no data
+      const start = new Date(dateRange.startDate);
+      const end = new Date(dateRange.endDate);
 
-    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-      const dateStr = format(d, 'yyyy-MM-dd');
-      dateMap.set(dateStr, { date: dateStr });
+      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        const dateStr = format(d, 'yyyy-MM-dd');
+        dateMap.set(dateStr, { date: dateStr });
 
-      // Initialize with 0 for all categories
-      categories.forEach(category => {
-        dateMap.get(dateStr)[`category_${category.id}`] = 0;
-      });
-    }
-
-    // Fill in actual data
-    logs.forEach(log => {
-      const dateEntry = dateMap.get(log.date);
-      if (dateEntry) {
-        dateEntry[`category_${log.category_id}`] = log.total_time;
+        // Initialize with 0 for all categories
+        categories.forEach(category => {
+          dateMap.get(dateStr)[`category_${category.id}`] = 0;
+        });
       }
-    });
 
-    // Convert map to array and sort by date
-    return Array.from(dateMap.values()).sort((a, b) =>
-      new Date(a.date) - new Date(b.date)
-    );
+      // Fill in actual data
+      logs.forEach(log => {
+        const dateEntry = dateMap.get(log.date);
+        if (dateEntry) {
+          dateEntry[`category_${log.category_id}`] = log.total_time;
+        } else {
+          console.warn(`No date entry found for log date: ${log.date}`);
+        }
+      });
+
+      // Convert map to array and sort by date
+      const result = Array.from(dateMap.values()).sort((a, b) =>
+        new Date(a.date) - new Date(b.date)
+      );
+
+      console.log("Processed data result:", result);
+      return result;
+    } catch (error) {
+      console.error("Error processing time data:", error);
+      // Return empty array with proper structure to avoid breaking the chart
+      return [];
+    }
   };
+
 
   // Calculate stats for the selected time period
   const calculateStats = (logs) => {
@@ -213,13 +248,25 @@ const Dashboard = () => {
 
   // Get data for chart (only visible categories)
   const getVisibleTimeData = () => {
+    if (!timeData || timeData.length === 0) {
+      console.log("No time data available for filtering");
+      return [];
+    }
+
+    console.log("Filtering time data with visibility:", categoryVisibility);
+
     return timeData.map(day => {
       const filtered = { date: day.date };
       Object.keys(day).forEach(key => {
         if (key.startsWith('category_')) {
           const categoryId = parseInt(key.split('_')[1]);
-          if (categoryVisibility[categoryId]) {
-            filtered[key] = day[key];
+          // Check if this category exists in visibility object
+          if (categoryVisibility.hasOwnProperty(categoryId)) {
+            if (categoryVisibility[categoryId]) {
+              filtered[key] = day[key];
+            }
+          } else {
+            console.warn(`Category ID ${categoryId} not found in visibility settings`);
           }
         }
       });
