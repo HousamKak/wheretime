@@ -79,7 +79,7 @@ const Header = () => {
                 <circle cx="12" cy="12" r="10" />
                 <polyline points="12 6 12 12 16 14" />
               </svg>
-              <span className="ml-2 text-xl font-bold text-gray-900">TimeTracker</span>
+              <span className="ml-2 text-xl font-bold text-gray-900">WhereTime</span>
             </Link>
           </div>
 

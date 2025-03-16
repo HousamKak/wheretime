@@ -206,17 +206,31 @@ const TimeEntryForm = ({ categories, onSuccess, compact = false }) => {
   // Render the component with appropriate styling based on compact mode
   return (
     <div className={compact ? "" : "card"}>
-      <div className={compact ? "sidebar-heading-wrapper" : "card-header"}>
-        <div className="flex justify-between items-center">
-          <h2 className={compact ? "sidebar-heading" : "card-title"}>Log Your Time</h2>
-          <button
-            onClick={toggleForm}
-            className={`btn btn-sm ${formVisible ? 'btn-outline' : 'btn-primary'}`}
-          >
-            {formVisible ? 'Hide Form' : 'Add Time Entry'}
-          </button>
+      {compact ? (
+        <div className="sidebar-section-header">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="sidebar-heading m-0">Log Your Time</h2>
+            <button
+              onClick={toggleForm}
+              className={`btn btn-sm ${formVisible ? 'btn-outline' : 'btn-primary'}`}
+            >
+              {formVisible ? 'Hide Form' : 'Add Entry'}
+            </button>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="card-header">
+          <div className="flex justify-between items-center">
+            <h2 className="card-title">Log Your Time</h2>
+            <button
+              onClick={toggleForm}
+              className={`btn btn-sm ${formVisible ? 'btn-outline' : 'btn-primary'}`}
+            >
+              {formVisible ? 'Hide Form' : 'Add Time Entry'}
+            </button>
+          </div>
+        </div>
+      )}
       
       {formVisible && (
         <div className={compact ? "" : "card-content"}>
@@ -251,8 +265,8 @@ const TimeEntryForm = ({ categories, onSuccess, compact = false }) => {
           <form onSubmit={handleSubmit} className={`${isLoading ? 'form-loading' : ''}`}>
             <div className={`${compact ? "space-y-3" : "grid grid-cols-1 md:grid-cols-2 gap-4 mb-4"}`}>
               {/* Date Selection */}
-              <div className="form-group">
-                <label className="form-label">
+              <div className="form-group mb-3">
+                <label className="form-label text-sm">
                   Date
                 </label>
                 <input
@@ -269,8 +283,8 @@ const TimeEntryForm = ({ categories, onSuccess, compact = false }) => {
               </div>
               
               {/* Category Selection */}
-              <div className="form-group">
-                <label className="form-label">
+              <div className="form-group mb-3">
+                <label className="form-label text-sm">
                   Category
                 </label>
                 <select
@@ -319,11 +333,11 @@ const TimeEntryForm = ({ categories, onSuccess, compact = false }) => {
             </div>
             
             {/* Time Entry */}
-            <div className="form-group mb-4">
-              <label className="form-label">
+            <div className="form-group mb-3">
+              <label className="form-label text-sm">
                 Time Spent
               </label>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
                   <div className="input-group">
                     <div className="input-group-prepend">
