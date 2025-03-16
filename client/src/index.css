@@ -1422,12 +1422,14 @@ p {
   color: var(--color-gray-700);
 }
 
+/* Dashboard sidebar styling - replaced and improved styles for index.css */
 .dashboard-sidebar {
   background-color: white;
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
   overflow: hidden;
   height: 100%;
+  border: 1px solid var(--color-gray-200);
 }
 
 .sidebar-section {
@@ -1439,8 +1441,8 @@ p {
   border-bottom: none;
 }
 
-.sidebar-heading-wrapper {
-  padding: 1rem 1rem 0.5rem 1rem;
+.sidebar-section-header {
+  padding-bottom: 0.5rem;
 }
 
 .sidebar-heading {
@@ -1449,6 +1451,7 @@ p {
   font-size: 1rem;
   font-weight: 600;
   margin-bottom: 0.75rem;
+  color: var(--color-gray-800);
 }
 
 .sidebar-heading::before {
@@ -1463,14 +1466,53 @@ p {
 }
 
 .sidebar-category {
-  padding: 0.5rem;
   border-radius: var(--radius-md);
-  background-color: var(--color-gray-50);
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.75rem;
+  transition: all var(--transition-fast);
+  overflow: hidden;
+}
+
+.sidebar-category:hover {
+  box-shadow: var(--shadow-sm);
 }
 
 .sidebar-category:last-child {
   margin-bottom: 0;
+}
+
+.time-summary-card {
+  transition: all var(--transition-normal);
+  box-shadow: var(--shadow-sm);
+}
+
+.time-summary-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+/* Form improvements for sidebar */
+.sidebar-section .form-input,
+.sidebar-section .form-select {
+  font-size: 0.875rem;
+  padding: 0.5rem 0.625rem;
+}
+
+.sidebar-section .form-label {
+  margin-bottom: 0.25rem;
+}
+
+.sidebar-section .btn-sm {
+  font-size: 0.75rem;
+  padding: 0.3125rem 0.625rem;
+  height: auto;
+}
+
+/* Category toggles */
+.sidebar-section .form-checkbox {
+  width: 1rem;
+  height: 1rem;
+  border-radius: 0.25rem;
+  color: var(--color-primary);
 }
 
 /* Media query for responsive sidebar */
