@@ -1,16 +1,16 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import '../styles/components/categorylegend.css';
 
 const CategoryLegend = ({ 
-  categories, 
+  categories = [], 
   categoryVisibility = {}, 
   expandedCategories = {}, 
   onToggleExpand,
   onToggleVisibility
 }) => {
-  // Simple function to organize categories into a hierarchy
-  const organizeCategories = () => {
-    const rootCategories = [];
+  // Organize categories into a hierarchy using useMemo for better performance
+  const { rootCategories } = useMemo(() => {
+    const rootCats = [];
     const categoryMap = {};
     
     // Create objects for all categories
@@ -28,14 +28,12 @@ const CategoryLegend = ({
           categoryMap[cat.parent_id].children.push(categoryMap[cat.id]);
         }
       } else {
-        rootCategories.push(categoryMap[cat.id]);
+        rootCats.push(categoryMap[cat.id]);
       }
     });
     
-    return { rootCategories };
-  };
-  
-  const { rootCategories } = organizeCategories();
+    return { rootCategories: rootCats, categoryMap };
+  }, [categories]);
   
   if (!rootCategories || rootCategories.length === 0) {
     return <div className="category-legend-empty">No categories available</div>;
@@ -75,6 +73,7 @@ const CategoryLegend = ({
                 {/* Expand/collapse button (only for categories with children) */}
                 {hasChildren && (
                   <button
+                    type="button"
                     onClick={() => onToggleExpand && onToggleExpand(category.id)}
                     className={`category-expand-btn ${isExpanded ? 'expanded' : ''}`}
                     aria-label={isExpanded ? 'Collapse category' : 'Expand category'}

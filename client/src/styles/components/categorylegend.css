@@ -1,37 +1,43 @@
-/* CategoryLegend component simplified styles */
+/* CategoryLegend component styles */
 .category-legend {
-  padding: 8px;
+  padding: 1rem;
+  background-color: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .category-list {
-  margin-top: 12px;
+  margin-top: 1rem;
 }
 
 .category-item {
-  margin-bottom: 8px;
-  border-radius: 6px;
+  margin-bottom: 0.5rem;
+  border-radius: 0.375rem;
   overflow: hidden;
+  transition: all 0.2s ease;
 }
 
 .category-header {
   display: flex;
   align-items: center;
-  padding: 10px 12px;
+  padding: 0.625rem 0.75rem;
   background-color: #f9fafb;
   border: 1px solid #e5e7eb;
-  border-radius: 6px;
-  transition: all 0.2s;
+  border-radius: 0.375rem;
+  transition: all 0.2s ease;
   cursor: pointer;
 }
 
 .category-header:hover {
   background-color: #f3f4f6;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .category-visibility {
   display: flex;
   align-items: center;
-  margin-right: 8px;
+  margin-right: 0.75rem;
   position: relative;
 }
 
@@ -43,12 +49,12 @@
 }
 
 .category-color-indicator {
-  width: 16px;
-  height: 16px;
-  border-radius: 4px;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
   cursor: pointer;
   border: 2px solid transparent;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
 }
 
 .category-color-indicator:hover {
@@ -68,11 +74,11 @@
   justify-content: center;
   background: none;
   border: none;
-  width: 24px;
-  height: 24px;
+  width: 1.5rem;
+  height: 1.5rem;
   color: #6b7280;
   cursor: pointer;
-  transition: transform 0.2s;
+  transition: transform 0.3s ease, background-color 0.2s ease;
   border-radius: 50%;
 }
 
@@ -87,34 +93,38 @@
 
 /* Subcategories */
 .subcategory-list {
-  padding: 6px 0 6px 24px;
+  padding: 0.25rem 0 0.25rem 1.5rem;
   border-left: 1px dashed #d1d5db;
-  margin-left: 12px;
-  margin-top: 4px;
+  margin-left: 0.75rem;
+  margin-top: 0.25rem;
+  transition: max-height 0.3s ease;
+  overflow: hidden;
 }
 
 .subcategory-item {
-  margin-bottom: 6px;
+  margin-bottom: 0.375rem;
 }
 
 .subcategory-header {
   display: flex;
   align-items: center;
-  padding: 6px 8px;
+  padding: 0.375rem 0.5rem;
   background-color: #f9fafb;
   border: 1px solid #e5e7eb;
-  border-radius: 4px;
-  transition: all 0.2s;
+  border-radius: 0.25rem;
+  transition: all 0.2s ease;
   cursor: pointer;
 }
 
 .subcategory-header:hover {
   background-color: #f3f4f6;
+  transform: translateX(2px);
 }
 
 .subcategory-name {
   font-size: 0.75rem;
   color: #374151;
+  margin-left: 0.5rem;
 }
 
 /* Empty state */
@@ -124,16 +134,16 @@
   color: #6b7280;
   font-style: italic;
   background-color: #f9fafb;
-  border-radius: 6px;
+  border-radius: 0.375rem;
   border: 1px dashed #d1d5db;
 }
 
-/* Tooltip */
-.tooltip {
-  padding: 8px 12px;
-  background: white;
-  border-radius: 6px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  font-size: 12px;
-  border: 1px solid #e5e7eb;
+/* Sidebar heading styles */
+.sidebar-heading {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #111827;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 0.75rem;
 }

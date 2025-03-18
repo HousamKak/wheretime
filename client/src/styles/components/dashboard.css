@@ -1,150 +1,162 @@
-/* Main dashboard layout with collapsible sidebars */
+/* Dashboard component styles */
 .dashboard-container {
-    display: flex;
-    position: relative;
-    width: 100%;
-    min-height: calc(100vh - 64px); /* Adjust for header height */
-    background-color: var(--color-gray-50);
-  }
-  
-  /* Main content area */
+  display: flex;
+  position: relative;
+  width: 100%;
+  min-height: calc(100vh - 4rem); /* Adjust for header height */
+  background-color: #f3f4f6;
+}
+
+/* Main content area */
+.main-content {
+  flex: 1;
+  margin-left: 280px;
+  margin-right: 280px;
+  padding: 1.5rem 1rem;
+  transition: margin 0.3s ease-in-out;
+}
+
+.main-content.left-closed {
+  margin-left: 0;
+}
+
+.main-content.right-closed {
+  margin-right: 0;
+}
+
+.main-content.full-width {
+  margin-left: 0;
+  margin-right: 0;
+}
+
+/* Chart card styling */
+.chart-card {
+  background-color: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 1.25rem;
+  height: calc(100vh - 9rem);
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.chart-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.chart-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 1rem;
+  position: relative;
+  padding-left: 0.75rem;
+}
+
+.chart-title::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.25rem;
+  bottom: 0.25rem;
+  width: 4px;
+  background-color: #3b82f6;
+  border-radius: 2px;
+}
+
+/* Chart loading and empty states */
+.chart-loading, .chart-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+}
+
+.chart-empty {
+  background-color: #f9fafb;
+  border-radius: 0.5rem;
+  border: 1px dashed #d1d5db;
+}
+
+/* Loading spinner */
+.spinner {
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 3px solid rgba(59, 130, 246, 0.3);
+  border-radius: 50%;
+  border-top-color: #3b82f6;
+  animation: spin 1s linear infinite;
+  margin-bottom: 0.75rem;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Toggle buttons for sidebars */
+.sidebar-toggle {
+  position: fixed;
+  z-index: 30;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1.5rem;
+  height: 3rem;
+  background-color: white;
+  border: 1px solid #e5e7eb;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.sidebar-toggle:hover {
+  background-color: #f3f4f6;
+  color: #111827;
+  transform: translateY(-50%) scale(1.05);
+}
+
+.left-toggle {
+  left: 0;
+  border-radius: 0 0.25rem 0.25rem 0;
+  border-left: none;
+}
+
+.right-toggle {
+  right: 0;
+  border-radius: 0.25rem 0 0 0.25rem;
+  border-right: none;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1280px) {
   .main-content {
-    flex: 1;
-    margin-left: 280px;
-    margin-right: 280px;
-    padding: 16px;
-    transition: margin 0.3s ease-in-out;
+    margin-left: 250px;
+    margin-right: 250px;
   }
-  
-  .main-content.left-closed {
-    margin-left: 0;
+}
+
+@media (max-width: 1024px) {
+  .main-content {
+    margin-left: 220px;
+    margin-right: 220px;
   }
-  
-  .main-content.right-closed {
-    margin-right: 0;
-  }
-  
-  .main-content.full-width {
+}
+
+@media (max-width: 768px) {
+  .main-content {
     margin-left: 0;
     margin-right: 0;
+    padding: 1rem 0.75rem;
   }
   
-  /* Chart card styling */
   .chart-card {
-    background-color: white;
-    border-radius: 8px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    padding: 20px;
-    height: calc(100vh - 120px);
-    display: flex;
-    flex-direction: column;
+    height: calc(100vh - 8rem);
   }
-  
-  .chart-title {
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: var(--color-gray-800);
-    margin-bottom: 16px;
-    position: relative;
-    padding-left: 12px;
-  }
-  
-  .chart-title::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 4px;
-    bottom: 4px;
-    width: 4px;
-    background-color: var(--color-primary);
-    border-radius: 2px;
-  }
-  
-  /* Chart loading and empty states */
-  .chart-loading, .chart-empty {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    color: var(--color-gray-500);
-  }
-  
-  .chart-empty {
-    background-color: var(--color-gray-50);
-    border-radius: 8px;
-    border: 1px dashed var(--color-gray-300);
-  }
-  
-  /* Loading spinner */
-  .spinner {
-    width: 40px;
-    height: 40px;
-    border: 3px solid rgba(var(--color-primary-rgb), 0.3);
-    border-radius: 50%;
-    border-top-color: var(--color-primary);
-    animation: spin 1s linear infinite;
-    margin-bottom: 12px;
-  }
-  
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
-  
-  /* Toggle buttons for sidebars */
-  .sidebar-toggle {
-    position: fixed;
-    z-index: 30;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 24px;
-    height: 48px;
-    background-color: white;
-    border: 1px solid var(--color-gray-200);
-    color: var(--color-gray-600);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    transition: background-color 0.2s, color 0.2s;
-  }
-  
-  .sidebar-toggle:hover {
-    background-color: var(--color-gray-100);
-    color: var(--color-gray-800);
-  }
-  
-  .left-toggle {
-    left: 0;
-    border-radius: 0 4px 4px 0;
-    border-left: none;
-  }
-  
-  .right-toggle {
-    right: 0;
-    border-radius: 4px 0 0 4px;
-    border-right: none;
-  }
-  
-  /* Responsive adjustments */
-  @media (max-width: 1280px) {
-    .main-content {
-      margin-left: 250px;
-      margin-right: 250px;
-    }
-  }
-  
-  @media (max-width: 1024px) {
-    .main-content {
-      margin-left: 220px;
-      margin-right: 220px;
-    }
-  }
-  
-  @media (max-width: 768px) {
-    .main-content {
-      margin-left: 0;
-      margin-right: 0;
-    }
-  }
+}

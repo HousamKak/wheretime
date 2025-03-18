@@ -6,29 +6,28 @@ import '../styles/components/dashboard.css';
 import { Button } from './common/Button';
 
 const Dashboard = ({ 
-  categories,
-  logs,
-  stats,
-  dateRange,
+  categories = [],
+  logs = [],
+  stats = [],
+  dateRange = { start: '', end: '' },
   onDateRangeChange,
-  loading
+  loading = false
 }) => {
   // State for controlling sidebar visibility
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(true);
   const [rightSidebarOpen, setRightSidebarOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   
-  // Initialize state objects immediately with useMemo
+  // Initialize category visibility state with useMemo to handle async loading
   const initialCategoryVisibility = useMemo(() => {
-    if (!categories || categories.length === 0) return {};
     return categories.reduce((acc, category) => {
       acc[category.id] = true;
       return acc;
     }, {});
   }, [categories]);
 
+  // Initialize expanded categories state
   const initialExpandedCategories = useMemo(() => {
-    if (!categories || categories.length === 0) return {};
     return categories.reduce((acc, category) => {
       if (!category.parent_id) {
         acc[category.id] = false;
@@ -41,6 +40,12 @@ const Dashboard = ({
   const [categoryVisibility, setCategoryVisibility] = useState(initialCategoryVisibility);
   const [expandedCategories, setExpandedCategories] = useState(initialExpandedCategories);
   const [presetRange, setPresetRange] = useState('30days');
+
+  // Update state when categories change
+  useEffect(() => {
+    setCategoryVisibility(initialCategoryVisibility);
+    setExpandedCategories(initialExpandedCategories);
+  }, [categories, initialCategoryVisibility, initialExpandedCategories]);
 
   // Check for mobile view on initial load and resize
   useEffect(() => {
@@ -82,11 +87,11 @@ const Dashboard = ({
         end = formatDateISO(today);
         break;
       case '7days':
-        start = formatDateISO(new Date(today.setDate(today.getDate() - 6)));
+        start = formatDateISO(new Date(new Date().setDate(today.getDate() - 6)));
         end = formatDateISO(new Date());
         break;
       case '30days':
-        start = formatDateISO(new Date(today.setDate(today.getDate() - 29)));
+        start = formatDateISO(new Date(new Date().setDate(today.getDate() - 29)));
         end = formatDateISO(new Date());
         break;
       case 'thisMonth':
@@ -130,7 +135,7 @@ const Dashboard = ({
   // Calculate total time from stats
   const totalTime = stats.reduce((total, stat) => total + (stat.totalTime || 0), 0);
 
-  // Process logs data for the chart - simplified version
+  // Process logs data for the chart
   const processLogsForChart = () => {
     if (!logs || logs.length === 0) {
       return [];
@@ -151,7 +156,7 @@ const Dashboard = ({
       
       if (!dateGroups[log.date]) {
         dateGroups[log.date] = {
-          date: new Date(log.date)
+          date: log.date
         };
         
         // Initialize all categories to 0
@@ -166,11 +171,11 @@ const Dashboard = ({
       if (!log.date || !validCategoryIds[log.category_id]) return;
       
       const categoryKey = `category_${log.category_id}`;
-      dateGroups[log.date][categoryKey] += log.total_time || 0;
+      dateGroups[log.date][categoryKey] = (dateGroups[log.date][categoryKey] || 0) + (log.total_time || 0);
     });
 
     // Convert to array and sort by date
-    return Object.values(dateGroups).sort((a, b) => a.date - b.date);
+    return Object.values(dateGroups).sort((a, b) => new Date(a.date) - new Date(b.date));
   };
 
   const chartData = processLogsForChart();
@@ -247,7 +252,7 @@ const Dashboard = ({
         </Button>
       )}
       
-      {/* Right Sidebar Component - Only render when we have proper state initialized */}
+      {/* Right Sidebar Component - Only render when visibility state is initialized */}
       {Object.keys(categoryVisibility).length > 0 && (
         <RightSidebar 
           isOpen={rightSidebarOpen}
