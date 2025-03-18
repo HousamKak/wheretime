@@ -3,13 +3,47 @@ import * as d3 from 'd3';
 import { format } from 'date-fns';
 
 const TimeSeriesChart = ({ data, categories, categoryVisibility, expandedCategories }) => {
+  console.log("TimeSeriesChart render - props received:", {
+    dataPoints: data?.length || 0,
+    categoriesCount: categories?.length || 0,
+    categoryVisibilityCount: Object.keys(categoryVisibility || {}).length,
+    expandedCategoriesCount: Object.keys(expandedCategories || {}).length
+  });
+
+  console.log("Full data sample (first item):", data?.[0]);
+  console.log("Full categoryVisibility state:", categoryVisibility);
+  console.log("Full expandedCategories state:", expandedCategories);
+
   const svgRef = useRef();
   const tooltipRef = useRef();
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const margin = { top: 30, right: 70, bottom: 60, left: 70 };
 
+  // Log all categories
+  useEffect(() => {
+    if (categories && categories.length > 0) {
+      console.log("Categories for chart:", categories.map(c => ({ id: c.id, name: c.name, parent_id: c.parent_id })));
+    }
+  }, [categories]);
+
+  // Log actually visible categories
+  useEffect(() => {
+    if (categories && categories.length > 0 && categoryVisibility) {
+      const visibleCategories = categories.filter(cat => categoryVisibility[cat.id] !== false);
+      console.log("Visible categories for chart:", visibleCategories.map(c => ({ id: c.id, name: c.name })));
+      
+      // Log expanded categories that are visible
+      const visibleExpandedCategories = Object.entries(expandedCategories || {})
+        .filter(([id, isExpanded]) => isExpanded && categoryVisibility[id] !== false)
+        .map(([id]) => id);
+      
+      console.log("Visible and expanded categories:", visibleExpandedCategories);
+    }
+  }, [categories, categoryVisibility, expandedCategories]);
+
   // Process the category hierarchy once with useMemo to avoid recalculating
   const categoryHierarchy = useMemo(() => {
+    console.log("Processing category hierarchy for TimeSeriesChart");
     const categoryMap = {};
     const rootCategories = [];
 
@@ -24,14 +58,19 @@ const TimeSeriesChart = ({ data, categories, categoryVisibility, expandedCategor
     // Build hierarchy
     categories.forEach(category => {
       if (category.parent_id) {
+        console.log(`Chart: Category ${category.id} (${category.name}) is a child of ${category.parent_id}`);
         if (categoryMap[category.parent_id]) {
           categoryMap[category.parent_id].children.push(categoryMap[category.id]);
+        } else {
+          console.warn(`Chart: Parent category ${category.parent_id} not found for child ${category.id}`);
         }
       } else {
+        console.log(`Chart: Category ${category.id} (${category.name}) is a root category`);
         rootCategories.push(categoryMap[category.id]);
       }
     });
 
+    console.log(`Chart: Found ${rootCategories.length} root categories with hierarchy`);
     return { categoryMap, rootCategories };
   }, [categories]);
 
@@ -42,6 +81,8 @@ const TimeSeriesChart = ({ data, categories, categoryVisibility, expandedCategor
         const containerWidth = svgRef.current.parentElement.clientWidth;
         const containerHeight = Math.max(400, containerWidth * 0.5);
         
+        console.log("Chart container dimensions:", { width: containerWidth, height: containerHeight });
+        
         setDimensions({
           width: containerWidth,
           height: containerHeight
@@ -50,13 +91,22 @@ const TimeSeriesChart = ({ data, categories, categoryVisibility, expandedCategor
     };
 
     updateDimensions();
+    
     window.addEventListener('resize', updateDimensions);
     return () => window.removeEventListener('resize', updateDimensions);
   }, []);
 
   // Create chart whenever data, dimensions, or visibility changes
   useEffect(() => {
+    console.log("TimeSeriesChart useEffect for chart creation triggered");
+    console.log("Chart render conditions:", {
+      hasData: data && data.length > 0,
+      hasDimensions: dimensions.width > 0 && dimensions.height > 0,
+      hasCategories: categories && categories.length > 0
+    });
+    
     if (!data || data.length === 0 || !dimensions.width || !dimensions.height || !categories || categories.length === 0) {
+      console.warn("Missing required data for chart rendering");
       return;
     }
 
@@ -64,8 +114,12 @@ const TimeSeriesChart = ({ data, categories, categoryVisibility, expandedCategor
     const visibleCategories = categories.filter(category => 
       categoryVisibility[category.id] !== false
     );
+    
+    console.log("Visible categories count:", visibleCategories.length);
+    console.log("Visible category IDs:", visibleCategories.map(c => c.id));
 
     if (visibleCategories.length === 0) {
+      console.warn("No visible categories, not rendering chart data");
       // No visible categories, clear chart and show message
       const svg = d3.select(svgRef.current);
       svg.selectAll('*').remove();
@@ -83,6 +137,7 @@ const TimeSeriesChart = ({ data, categories, categoryVisibility, expandedCategor
     }
 
     try {
+      console.log("Starting chart creation");
       // Clear previous chart
       d3.select(svgRef.current).selectAll('*').remove();
       
@@ -98,13 +153,16 @@ const TimeSeriesChart = ({ data, categories, categoryVisibility, expandedCategor
       const innerHeight = dimensions.height - margin.top - margin.bottom;
 
       // Format dates properly
+      console.log("Formatting data dates");
       const formattedData = data.map(d => ({
         ...d,
         date: typeof d.date === 'string' ? new Date(d.date) : d.date
       }));
 
       // Create scales
+      console.log("Creating scales");
       const xDomain = d3.extent(formattedData, d => d.date);
+      console.log("X domain:", xDomain);
       
       const xScale = d3.scaleTime()
         .domain(xDomain)
@@ -112,26 +170,35 @@ const TimeSeriesChart = ({ data, categories, categoryVisibility, expandedCategor
         .nice();
 
       // Prepare stacked data
+      console.log("Preparing stacked data");
       let stackedData = formattedData.map(dayData => {
         const day = { date: dayData.date };
         let yBase = 0;
         
         // Process root categories first
+        console.log("Processing root categories for stacked data");
         categoryHierarchy.rootCategories.forEach(rootCategory => {
           if (categoryVisibility[rootCategory.id] !== false) {
+            console.log(`Processing category ${rootCategory.id} (${rootCategory.name}) for stacked data`);
             let categoryValue = dayData[`category_${rootCategory.id}`] || 0;
             
             // If this category is expanded, we need to handle children separately
             if (expandedCategories[rootCategory.id]) {
+              console.log(`Category ${rootCategory.id} is expanded, processing children separately`);
+              
               // Subtract visible children values from parent
               rootCategory.children.forEach(child => {
                 if (categoryVisibility[child.id] !== false) {
-                  categoryValue -= dayData[`category_${child.id}`] || 0;
+                  console.log(`Subtracting child ${child.id} (${child.name}) value from parent`);
+                  const childValue = dayData[`category_${child.id}`] || 0;
+                  console.log(`Child ${child.id} value: ${childValue}`);
+                  categoryValue -= childValue;
                 }
               });
               
               // Ensure value is not negative
               categoryValue = Math.max(0, categoryValue);
+              console.log(`Adjusted parent category ${rootCategory.id} value: ${categoryValue}`);
               
               // Add parent value first
               day[`parent_${rootCategory.id}`] = { 
@@ -147,6 +214,7 @@ const TimeSeriesChart = ({ data, categories, categoryVisibility, expandedCategor
               // Then add each visible child
               rootCategory.children.forEach(child => {
                 if (categoryVisibility[child.id] !== false) {
+                  console.log(`Adding child ${child.id} (${child.name}) to stacked data`);
                   const childValue = dayData[`category_${child.id}`] || 0;
                   
                   day[`child_${child.id}`] = { 
@@ -161,6 +229,7 @@ const TimeSeriesChart = ({ data, categories, categoryVisibility, expandedCategor
                 }
               });
             } else {
+              console.log(`Category ${rootCategory.id} is not expanded, adding total value`);
               // Category not expanded, just add the total value
               day[`category_${rootCategory.id}`] = { 
                 value: categoryValue, 
@@ -171,6 +240,8 @@ const TimeSeriesChart = ({ data, categories, categoryVisibility, expandedCategor
               
               yBase += categoryValue;
             }
+          } else {
+            console.log(`Category ${rootCategory.id} is not visible, skipping`);
           }
         });
         
@@ -178,8 +249,11 @@ const TimeSeriesChart = ({ data, categories, categoryVisibility, expandedCategor
         return day;
       });
 
+      console.log("Stacked data sample:", stackedData[0]);
+
       // Find max y value for scale
       const maxY = d3.max(stackedData, d => d.total) || 0;
+      console.log("Max Y value:", maxY);
 
       const yScale = d3.scaleLinear()
         .domain([0, maxY > 0 ? maxY * 1.1 : 10])
@@ -187,6 +261,7 @@ const TimeSeriesChart = ({ data, categories, categoryVisibility, expandedCategor
         .nice();
 
       // Create axes
+      console.log("Creating axes");
       const xAxis = d3.axisBottom(xScale)
         .ticks(Math.min(formattedData.length, innerWidth / 80))
         .tickFormat(d => format(d, 'MMM d'));
@@ -267,15 +342,26 @@ const TimeSeriesChart = ({ data, categories, categoryVisibility, expandedCategor
         .text('Date');
 
       // Create areas for visible categories with proper stacking
-      Object.keys(stackedData[0] || {}).forEach(key => {
-        if (key === 'date' || key === 'total') return;
-        
+      console.log("Creating category areas");
+      const stackKeys = Object.keys(stackedData[0] || {}).filter(key => 
+        key !== 'date' && key !== 'total'
+      );
+      
+      console.log("Stack keys to render:", stackKeys);
+      
+      // Create areas for each key
+      stackKeys.forEach(key => {
         // Get a sample data point to extract category info
         const samplePoint = stackedData[0][key];
-        if (!samplePoint || !samplePoint.category) return;
+        if (!samplePoint || !samplePoint.category) {
+          console.warn(`Key ${key} missing category information in sample point:`, samplePoint);
+          return;
+        }
         
         const category = samplePoint.category;
         const isChild = key.startsWith('child_');
+        
+        console.log(`Rendering area for ${isChild ? 'child' : 'parent/root'} category: ${category.id} (${category.name})`);
         
         // Area generator
         const areaGenerator = d3.area()
@@ -306,6 +392,7 @@ const TimeSeriesChart = ({ data, categories, categoryVisibility, expandedCategor
       });
 
       // Add hover effects
+      console.log("Adding hover effects");
       const focus = svg.append('g')
         .attr('class', 'focus')
         .style('display', 'none');
@@ -454,6 +541,8 @@ const TimeSeriesChart = ({ data, categories, categoryVisibility, expandedCategor
             tooltip.style('visibility', 'hidden');
           }
         });
+        
+      console.log("Chart rendering complete");
     } catch (error) {
       console.error("Error creating chart:", error);
     }
@@ -477,6 +566,7 @@ const TimeSeriesChart = ({ data, categories, categoryVisibility, expandedCategor
 
   // Placeholder when no data is available
   if (!data || data.length === 0) {
+    console.log("No data available for chart, rendering placeholder");
     return (
       <div className="flex flex-col items-center justify-center h-64">
         <p className="text-gray-500 text-center">No data available for the selected date range</p>

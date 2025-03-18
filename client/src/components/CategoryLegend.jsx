@@ -126,7 +126,10 @@ const CategoryLegend = ({
                             <label 
                               htmlFor={`visibility-${child.id}`}
                               className="category-color-indicator"
-                              style={{ backgroundColor: child.color || '#6B7280', opacity: isChildVisible ? 1 : 0.4 }}
+                              style={{ 
+                                backgroundColor: child.color || `hsl(${(child.id * 40) % 360}, 70%, 60%)`,
+                                opacity: isChildVisible ? 1 : 0.4 
+                              }}
                             ></label>
                           </div>
                           <div className="subcategory-name">{child.name}</div>

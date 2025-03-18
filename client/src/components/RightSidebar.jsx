@@ -11,6 +11,33 @@ const RightSidebar = ({
   onToggleExpand,
   onToggleVisibility 
 }) => {
+  console.log("RightSidebar render - props received:", {
+    isOpen,
+    categoriesCount: categories.length,
+    categoryVisibilityCount: Object.keys(categoryVisibility).length,
+    expandedCategoriesCount: Object.keys(expandedCategories).length,
+    hasToggleExpand: typeof onToggleExpand === 'function',
+    hasToggleVisibility: typeof onToggleVisibility === 'function'
+  });
+  
+  const handleToggleVisibility = (categoryId) => {
+    console.log("RightSidebar: handleToggleVisibility called for categoryId:", categoryId);
+    if (onToggleVisibility) {
+      onToggleVisibility(categoryId);
+    } else {
+      console.warn("RightSidebar: onToggleVisibility is not a function");
+    }
+  };
+
+  const handleToggleExpand = (categoryId) => {
+    console.log("RightSidebar: handleToggleExpand called for categoryId:", categoryId);
+    if (onToggleExpand) {
+      onToggleExpand(categoryId);
+    } else {
+      console.warn("RightSidebar: onToggleExpand is not a function");
+    }
+  };
+
   return (
     <aside className={`right-sidebar ${isOpen ? 'open' : 'closed'}`}>
       <div className="sidebar-header">
@@ -18,7 +45,10 @@ const RightSidebar = ({
         <button 
           type="button"
           className="sidebar-close-btn"
-          onClick={onClose}
+          onClick={() => {
+            console.log("RightSidebar: close button clicked");
+            onClose();
+          }}
           aria-label="Close right sidebar"
         >
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
@@ -32,8 +62,8 @@ const RightSidebar = ({
           categories={categories}
           categoryVisibility={categoryVisibility}
           expandedCategories={expandedCategories}
-          onToggleExpand={onToggleExpand}
-          onToggleVisibility={onToggleVisibility}
+          onToggleExpand={handleToggleExpand}
+          onToggleVisibility={handleToggleVisibility}
         />
       </div>
     </aside>

@@ -13,6 +13,14 @@ const Dashboard = ({
   onDateRangeChange,
   loading = false
 }) => {
+  console.log("Dashboard render - props received:", { 
+    categoriesCount: categories.length,
+    logsCount: logs.length,
+    statsCount: stats.length,
+    dateRange,
+    loading
+  });
+  
   // State for controlling sidebar visibility
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(true);
   const [rightSidebarOpen, setRightSidebarOpen] = useState(true);
@@ -20,20 +28,26 @@ const Dashboard = ({
   
   // Initialize category visibility state with useMemo to handle async loading
   const initialCategoryVisibility = useMemo(() => {
-    return categories.reduce((acc, category) => {
+    console.log("Initializing category visibility state with:", categories.length, "categories");
+    const result = categories.reduce((acc, category) => {
       acc[category.id] = true;
       return acc;
     }, {});
+    console.log("Initial category visibility state:", result);
+    return result;
   }, [categories]);
 
   // Initialize expanded categories state
   const initialExpandedCategories = useMemo(() => {
-    return categories.reduce((acc, category) => {
+    console.log("Initializing expanded categories state with:", categories.length, "categories");
+    const result = categories.reduce((acc, category) => {
       if (!category.parent_id) {
         acc[category.id] = false;
       }
       return acc;
     }, {});
+    console.log("Initial expanded categories state:", result);
+    return result;
   }, [categories]);
   
   // Track category visibility and expanding state
@@ -43,6 +57,9 @@ const Dashboard = ({
 
   // Update state when categories change
   useEffect(() => {
+    console.log("Categories changed, updating visibility and expansion states");
+    console.log("New visibility state:", initialCategoryVisibility);
+    console.log("New expanded state:", initialExpandedCategories);
     setCategoryVisibility(initialCategoryVisibility);
     setExpandedCategories(initialExpandedCategories);
   }, [categories, initialCategoryVisibility, initialExpandedCategories]);
@@ -78,6 +95,7 @@ const Dashboard = ({
 
   // Handle preset range selection
   const handlePresetChange = (preset) => {
+    console.log("Preset range changed to:", preset);
     const today = new Date();
     let start, end;
 
@@ -107,6 +125,7 @@ const Dashboard = ({
         return;
     }
 
+    console.log("New date range:", { start, end });
     setPresetRange(preset);
     onDateRangeChange({ start, end });
   };
@@ -118,9 +137,13 @@ const Dashboard = ({
 
   // Toggle category visibility
   const toggleCategoryVisibility = (categoryId) => {
-    if (!categoryId) return;
+    if (!categoryId) {
+      console.error("toggleCategoryVisibility called with invalid categoryId:", categoryId);
+      return;
+    }
     
     console.log("Toggling visibility for category:", categoryId);
+    console.log("Current visibility state:", categoryVisibility);
     
     setCategoryVisibility(prev => {
       const newState = {
@@ -134,9 +157,13 @@ const Dashboard = ({
   
   // Toggle category expansion
   const toggleCategoryExpansion = (categoryId) => {
-    if (!categoryId) return;
+    if (!categoryId) {
+      console.error("toggleCategoryExpansion called with invalid categoryId:", categoryId);
+      return;
+    }
     
     console.log("Toggling expansion for category:", categoryId);
+    console.log("Current expansion state:", expandedCategories);
     
     setExpandedCategories(prev => {
       const newState = {
@@ -150,25 +177,35 @@ const Dashboard = ({
 
   // Calculate total time from stats
   const totalTime = stats.reduce((total, stat) => total + (stat.totalTime || 0), 0);
+  console.log("Calculated total time:", totalTime);
 
   // Process logs data for the chart
   const processLogsForChart = () => {
+    console.log("Processing logs for chart, logs count:", logs?.length || 0);
+    
     if (!logs || logs.length === 0) {
+      console.log("No logs to process, returning empty array");
       return [];
     }
+
+    console.log("Categories available for processing:", categories.length);
 
     // Create a lookup for valid categories
     const validCategoryIds = {};
     categories.forEach(cat => {
       validCategoryIds[cat.id] = true;
     });
+    console.log("Valid category IDs:", validCategoryIds);
 
     // Group logs by date
     const dateGroups = {};
     
     // First pass: Initialize days and valid categories
     logs.forEach(log => {
-      if (!log.date) return;
+      if (!log.date) {
+        console.warn("Log missing date:", log);
+        return;
+      }
       
       if (!dateGroups[log.date]) {
         dateGroups[log.date] = {
@@ -182,19 +219,38 @@ const Dashboard = ({
       }
     });
     
+    console.log("Initialized date groups:", Object.keys(dateGroups).length);
+    
     // Second pass: Add time values for logs with valid categories
     logs.forEach(log => {
-      if (!log.date || !validCategoryIds[log.category_id]) return;
+      if (!log.date || !validCategoryIds[log.category_id]) {
+        console.warn("Skipping log due to invalid date or category:", log);
+        return;
+      }
       
       const categoryKey = `category_${log.category_id}`;
       dateGroups[log.date][categoryKey] = (dateGroups[log.date][categoryKey] || 0) + (log.total_time || 0);
     });
 
     // Convert to array and sort by date
-    return Object.values(dateGroups).sort((a, b) => new Date(a.date) - new Date(b.date));
+    const result = Object.values(dateGroups).sort((a, b) => new Date(a.date) - new Date(b.date));
+    console.log("Processed chart data, points count:", result.length);
+    if (result.length > 0) {
+      console.log("Sample data point:", result[0]);
+    }
+    
+    return result;
   };
 
   const chartData = processLogsForChart();
+  console.log("Final chart data prepared, points:", chartData.length);
+
+  console.log("Rendering Dashboard with state:", { 
+    categoryVisibility, 
+    expandedCategories,
+    leftSidebarOpen,
+    rightSidebarOpen
+  });
 
   return (
     <div className="dashboard-container">
@@ -220,6 +276,7 @@ const Dashboard = ({
           endDate: dateRange.end
         }}
         onDateRangeChange={(newRange) => {
+          console.log("Date range changed in LeftSidebar:", newRange);
           onDateRangeChange({
             start: newRange.startDate,
             end: newRange.endDate
