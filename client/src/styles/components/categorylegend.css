@@ -1,91 +1,130 @@
 /* CategoryLegend component styles */
 .category-legend {
-    background-color: white;
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-md);
-    overflow: hidden;
-    border: 1px solid var(--color-gray-200);
-  }
-  
-  .category-item {
-    margin-bottom: 0.5rem;
-  }
-  
-  .category-graph-header {
-    display: flex;
-    align-items: center;
-    padding: 0.75rem 1rem;
-    background-color: var(--color-gray-50);
-    border-radius: var(--radius-md);
-    border: 1px solid var(--color-gray-200);
-    cursor: pointer;
-    transition: background-color var(--transition-fast);
-  }
-  
-  .category-graph-header:hover {
-    background-color: var(--color-gray-100);
-  }
-  
-  .category-graph-header.active {
-    background-color: var(--color-primary-50);
-    border-color: var(--color-primary-light);
-  }
-  
-  .category-graph-toggle {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    background-color: white;
-    border: 1px solid var(--color-gray-300);
-    margin-right: 0.75rem;
-    transition: transform var(--transition-fast);
-  }
-  
-  .category-graph-toggle.open {
-    transform: rotate(90deg);
-  }
-  
-  .category-graph-name {
-    display: flex;
-    align-items: center;
-    font-weight: 600;
-    color: var(--color-gray-800);
-  }
-  
-  .category-graph-color {
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    margin-right: 0.75rem;
-  }
-  
-  .category-graph-children {
-    padding: 0.5rem 1rem 0.5rem 2.5rem;
-  }
-  
-  .subcategory-header {
-    display: flex;
-    align-items: center;
-    padding: 0.5rem 0.75rem;
-    background-color: var(--color-gray-50);
-    border-radius: var(--radius-md);
-    margin-bottom: 0.5rem;
-  }
-  
-  .subcategory-name {
-    display: flex;
-    align-items: center;
-    font-weight: 500;
-    font-size: 0.875rem;
-    color: var(--color-gray-700);
-  }
-  
-  .subcategory-color {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    margin-right: 0.5rem;
-  }
+  padding: 8px;
+}
+
+.category-list {
+  margin-top: 12px;
+}
+
+.category-item {
+  margin-bottom: 8px;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.category-header {
+  display: flex;
+  align-items: center;
+  padding: 10px 12px;
+  background-color: var(--color-gray-50);
+  border: 1px solid var(--color-gray-200);
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.category-header:hover {
+  background-color: var(--color-gray-100);
+}
+
+.category-visibility {
+  display: flex;
+  align-items: center;
+  margin-right: 8px;
+}
+
+.category-checkbox {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.category-color-indicator {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: all 0.2s;
+}
+
+.category-color-indicator:hover {
+  transform: scale(1.1);
+}
+
+.category-color-indicator.inactive {
+  opacity: 0.4;
+}
+
+.category-name {
+  flex: 1;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-gray-700);
+}
+
+.category-expand-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  width: 24px;
+  height: 24px;
+  color: var(--color-gray-500);
+  cursor: pointer;
+  transition: transform 0.2s;
+  border-radius: 50%;
+}
+
+.category-expand-btn:hover {
+  background-color: var(--color-gray-200);
+  color: var(--color-gray-700);
+}
+
+.category-expand-btn.expanded {
+  transform: rotate(90deg);
+}
+
+/* Subcategories */
+.subcategory-list {
+  padding: 6px 0 6px 24px;
+  border-left: 1px dashed var(--color-gray-300);
+  margin-left: 12px;
+  margin-top: 4px;
+}
+
+.subcategory-item {
+  margin-bottom: 6px;
+}
+
+.subcategory-header {
+  display: flex;
+  align-items: center;
+  padding: 6px 8px;
+  background-color: var(--color-gray-50);
+  border: 1px solid var(--color-gray-200);
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.subcategory-header:hover {
+  background-color: var(--color-gray-100);
+}
+
+.subcategory-name {
+  font-size: 0.75rem;
+  color: var(--color-gray-700);
+}
+
+/* Empty state */
+.category-legend-empty {
+  text-align: center;
+  padding: 2rem 1rem;
+  color: var(--color-gray-500);
+  font-style: italic;
+  background-color: var(--color-gray-50);
+  border-radius: 6px;
+  border: 1px dashed var(--color-gray-300);
+}

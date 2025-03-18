@@ -1,11 +1,12 @@
-import React, { useState, useCallback } from 'react';
+import React, { useCallback } from 'react';
 import '../styles/components/categorylegend.css';
 
 const CategoryLegend = ({ 
   categories, 
   categoryVisibility,
   expandedCategories,
-  onToggleExpand
+  onToggleExpand,
+  onToggleVisibility
 }) => {
   // Process categories to create hierarchy
   const processCategoryHierarchy = useCallback(() => {
@@ -39,76 +40,83 @@ const CategoryLegend = ({
   const { rootCategories } = processCategoryHierarchy();
 
   if (!rootCategories || rootCategories.length === 0) {
-    return <div className="mt-4">No categories available to display</div>;
+    return <div className="category-legend-empty">No categories available to display</div>;
   }
 
   return (
-    <div className="dashboard-sidebar">
-      <div className="sidebar-section">
-        <h2 className="sidebar-heading">Chart Categories</h2>
-        <div className="space-y-2">
-          {rootCategories.map(category => {
-            if (!categoryVisibility[category.id]) return null;
+    <div className="category-legend">
+      <h3 className="sidebar-heading">Chart Categories</h3>
+      <div className="category-list">
+        {rootCategories.map(category => {
+          const isExpanded = expandedCategories[category.id];
+          const isVisible = categoryVisibility[category.id];
+          const hasChildren = category.children && category.children.length > 0;
 
-            const isExpanded = expandedCategories[category.id];
-            const hasChildren = category.children && category.children.length > 0;
-
-            return (
-              <div key={category.id} className="category-item">
-                <div
-                  className={`category-graph-header ${isExpanded ? 'active' : ''}`}
-                  onClick={() => hasChildren && onToggleExpand(category.id)}
-                  style={{ cursor: hasChildren ? 'pointer' : 'default' }}
-                >
-                  {hasChildren && (
-                    <div className={`category-graph-toggle ${isExpanded ? 'open' : ''}`}>
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                        className="w-4 h-4"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                    </div>
-                  )}
-
-                  <div className="category-graph-name">
-                    <span
-                      className="category-graph-color"
-                      style={{ backgroundColor: category.color }}
-                    ></span>
-                    <span>{category.name}</span>
-                  </div>
+          return (
+            <div key={category.id} className="category-item">
+              <div className="category-header">
+                <div className="category-visibility">
+                  <input
+                    type="checkbox"
+                    id={`visibility-${category.id}`}
+                    checked={isVisible}
+                    onChange={() => onToggleVisibility(category.id)}
+                    className="category-checkbox"
+                  />
+                  <label 
+                    htmlFor={`visibility-${category.id}`}
+                    className={`category-color-indicator ${isVisible ? '' : 'inactive'}`}
+                    style={{ backgroundColor: category.color }}
+                  ></label>
                 </div>
-
-                {isExpanded && hasChildren && (
-                  <div className="category-graph-children">
-                    {category.children.map(child => {
-                      if (!categoryVisibility[child.id]) return null;
-
-                      return (
-                        <div key={child.id} className="subcategory-header">
-                          <div className="subcategory-name">
-                            <span
-                              className="subcategory-color"
-                              style={{ backgroundColor: child.color }}
-                            ></span>
-                            <span>{child.name}</span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                
+                <div className="category-name">{category.name}</div>
+                
+                {hasChildren && (
+                  <button
+                    className={`category-expand-btn ${isExpanded ? 'expanded' : ''}`}
+                    onClick={() => onToggleExpand(category.id)}
+                    aria-label={isExpanded ? 'Collapse category' : 'Expand category'}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
+                      <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
+                    </svg>
+                  </button>
                 )}
               </div>
-            );
-          })}
-        </div>
+
+              {isExpanded && hasChildren && (
+                <div className="subcategory-list">
+                  {category.children.map(child => {
+                    const isChildVisible = categoryVisibility[child.id];
+                    
+                    return (
+                      <div key={child.id} className="subcategory-item">
+                        <div className="subcategory-header">
+                          <div className="category-visibility">
+                            <input
+                              type="checkbox"
+                              id={`visibility-${child.id}`}
+                              checked={isChildVisible}
+                              onChange={() => onToggleVisibility(child.id)}
+                              className="category-checkbox"
+                            />
+                            <label 
+                              htmlFor={`visibility-${child.id}`}
+                              className={`category-color-indicator ${isChildVisible ? '' : 'inactive'}`}
+                              style={{ backgroundColor: child.color }}
+                            ></label>
+                          </div>
+                          <div className="subcategory-name">{child.name}</div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

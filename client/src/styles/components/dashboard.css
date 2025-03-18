@@ -1,52 +1,150 @@
-/* Dashboard component styles */
-/* Main dashboard layout */
-.dashboard-root {
+/* Main dashboard layout with collapsible sidebars */
+.dashboard-container {
+    display: flex;
+    position: relative;
+    width: 100%;
+    min-height: calc(100vh - 64px); /* Adjust for header height */
+    background-color: var(--color-gray-50);
+  }
+  
+  /* Main content area */
+  .main-content {
+    flex: 1;
+    margin-left: 280px;
+    margin-right: 280px;
+    padding: 16px;
+    transition: margin 0.3s ease-in-out;
+  }
+  
+  .main-content.left-closed {
+    margin-left: 0;
+  }
+  
+  .main-content.right-closed {
+    margin-right: 0;
+  }
+  
+  .main-content.full-width {
+    margin-left: 0;
+    margin-right: 0;
+  }
+  
+  /* Chart card styling */
+  .chart-card {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    height: calc(100vh - 120px);
     display: flex;
     flex-direction: column;
-    gap: 16px;
-    width: 100%;
   }
   
-  @media (min-width: 1024px) {
-    .dashboard-root {
-      flex-direction: row;
-    }
+  .chart-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--color-gray-800);
+    margin-bottom: 16px;
+    position: relative;
+    padding-left: 12px;
   }
   
-  .sidebar {
-    width: 100%;
+  .chart-title::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 4px;
+    bottom: 4px;
+    width: 4px;
+    background-color: var(--color-primary);
+    border-radius: 2px;
   }
   
-  @media (min-width: 1024px) {
-    .sidebar {
-      width: 250px;
-      flex-shrink: 0;
-    }
+  /* Chart loading and empty states */
+  .chart-loading, .chart-empty {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-gray-500);
   }
   
-  .main-content {
-    width: 100%;
+  .chart-empty {
+    background-color: var(--color-gray-50);
+    border-radius: 8px;
+    border: 1px dashed var(--color-gray-300);
   }
   
-  @media (min-width: 1024px) {
+  /* Loading spinner */
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba(var(--color-primary-rgb), 0.3);
+    border-radius: 50%;
+    border-top-color: var(--color-primary);
+    animation: spin 1s linear infinite;
+    margin-bottom: 12px;
+  }
+  
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  
+  /* Toggle buttons for sidebars */
+  .sidebar-toggle {
+    position: fixed;
+    z-index: 30;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 24px;
+    height: 48px;
+    background-color: white;
+    border: 1px solid var(--color-gray-200);
+    color: var(--color-gray-600);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: background-color 0.2s, color 0.2s;
+  }
+  
+  .sidebar-toggle:hover {
+    background-color: var(--color-gray-100);
+    color: var(--color-gray-800);
+  }
+  
+  .left-toggle {
+    left: 0;
+    border-radius: 0 4px 4px 0;
+    border-left: none;
+  }
+  
+  .right-toggle {
+    right: 0;
+    border-radius: 4px 0 0 4px;
+    border-right: none;
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 1280px) {
     .main-content {
-      flex: 1;
-      min-width: 0;
-      margin: 0 16px;
+      margin-left: 250px;
+      margin-right: 250px;
     }
   }
   
-  /* For mobile stacking order */
-  @media (max-width: 1023px) {
-    .sidebar-container.left {
-      order: 1;
+  @media (max-width: 1024px) {
+    .main-content {
+      margin-left: 220px;
+      margin-right: 220px;
     }
+  }
   
-    .chart-container-main {
-      order: 0;
-    }
-  
-    .sidebar-container.right {
-      order: 2;
+  @media (max-width: 768px) {
+    .main-content {
+      margin-left: 0;
+      margin-right: 0;
     }
   }

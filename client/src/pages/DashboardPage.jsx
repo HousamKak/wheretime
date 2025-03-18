@@ -4,11 +4,13 @@ import { useApp } from '../contexts/AppContext';
 import { fetchLogs, fetchStats } from '../services/timeLogService';
 import { getDateRanges } from '../utils/dateUtils';
 import { Alert } from '../components/common/Alert';
+import '../styles/pages/dashboardpage.css';
 
 const DashboardPage = () => {
-  const { categories, loading } = useApp();
+  const { categories, loading: categoriesLoading } = useApp();
   const [logs, setLogs] = useState([]);
   const [stats, setStats] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [dateRange, setDateRange] = useState(getDateRanges().last30Days);
 
@@ -18,6 +20,7 @@ const DashboardPage = () => {
 
     const fetchData = async () => {
       try {
+        setLoading(true);
         // Fetch logs for selected date range
         const logsData = await fetchLogs({
           start_date: dateRange.start,
@@ -32,9 +35,11 @@ const DashboardPage = () => {
           group_by: 'category'
         });
         setStats(statsData);
+        setLoading(false);
       } catch (err) {
         console.error('Error fetching dashboard data:', err);
         setError('Failed to load dashboard data. Please try again.');
+        setLoading(false);
       }
     };
 
@@ -52,15 +57,13 @@ const DashboardPage = () => {
   };
 
   return (
-    <div>
-      <h1 className="text-3xl font-semibold mb-6">Dashboard</h1>
-      
+    <div className="dashboard-page-container">
       {error && (
         <Alert 
           type="error" 
           message={error} 
           onDismiss={handleDismissError} 
-          className="mb-4"
+          className="dashboard-alert"
         />
       )}
       
@@ -70,7 +73,7 @@ const DashboardPage = () => {
         stats={stats}
         dateRange={dateRange}
         onDateRangeChange={handleDateRangeChange}
-        loading={loading}
+        loading={loading || categoriesLoading}
       />
     </div>
   );
