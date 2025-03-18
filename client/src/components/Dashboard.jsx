@@ -118,18 +118,34 @@ const Dashboard = ({
 
   // Toggle category visibility
   const toggleCategoryVisibility = (categoryId) => {
-    setCategoryVisibility(prev => ({
-      ...prev,
-      [categoryId]: !prev[categoryId]
-    }));
+    if (!categoryId) return;
+    
+    console.log("Toggling visibility for category:", categoryId);
+    
+    setCategoryVisibility(prev => {
+      const newState = {
+        ...prev,
+        [categoryId]: !prev[categoryId]
+      };
+      console.log("New visibility state:", newState);
+      return newState;
+    });
   };
   
   // Toggle category expansion
   const toggleCategoryExpansion = (categoryId) => {
-    setExpandedCategories(prev => ({
-      ...prev,
-      [categoryId]: !prev[categoryId]
-    }));
+    if (!categoryId) return;
+    
+    console.log("Toggling expansion for category:", categoryId);
+    
+    setExpandedCategories(prev => {
+      const newState = {
+        ...prev,
+        [categoryId]: !prev[categoryId]
+      };
+      console.log("New expansion state:", newState);
+      return newState;
+    });
   };
 
   // Calculate total time from stats

@@ -35,6 +35,21 @@ const CategoryLegend = ({
     return { rootCategories: rootCats, categoryMap };
   }, [categories]);
   
+  // Handle visibility toggle
+  const handleVisibilityToggle = (categoryId) => {
+    if (onToggleVisibility) {
+      onToggleVisibility(categoryId);
+    }
+  };
+  
+  // Handle expand toggle
+  const handleExpandToggle = (categoryId, event) => {
+    event.stopPropagation(); // Prevent triggering parent click
+    if (onToggleExpand) {
+      onToggleExpand(categoryId);
+    }
+  };
+  
   if (!rootCategories || rootCategories.length === 0) {
     return <div className="category-legend-empty">No categories available</div>;
   }
@@ -50,14 +65,17 @@ const CategoryLegend = ({
           
           return (
             <div key={category.id} className="category-item">
-              <div className="category-header">
+              <div 
+                className="category-header"
+                onClick={() => handleVisibilityToggle(category.id)}
+              >
                 {/* Visibility checkbox */}
-                <div className="category-visibility">
+                <div className="category-visibility" onClick={(e) => e.stopPropagation()}>
                   <input
                     type="checkbox"
                     id={`visibility-${category.id}`}
                     checked={isVisible}
-                    onChange={() => onToggleVisibility && onToggleVisibility(category.id)}
+                    onChange={() => handleVisibilityToggle(category.id)}
                     className="category-checkbox"
                   />
                   <label 
@@ -74,7 +92,7 @@ const CategoryLegend = ({
                 {hasChildren && (
                   <button
                     type="button"
-                    onClick={() => onToggleExpand && onToggleExpand(category.id)}
+                    onClick={(e) => handleExpandToggle(category.id, e)}
                     className={`category-expand-btn ${isExpanded ? 'expanded' : ''}`}
                     aria-label={isExpanded ? 'Collapse category' : 'Expand category'}
                   >
@@ -93,13 +111,16 @@ const CategoryLegend = ({
                     
                     return (
                       <div key={child.id} className="subcategory-item">
-                        <div className="subcategory-header">
-                          <div className="category-visibility">
+                        <div 
+                          className="subcategory-header"
+                          onClick={() => handleVisibilityToggle(child.id)}
+                        >
+                          <div className="category-visibility" onClick={(e) => e.stopPropagation()}>
                             <input
                               type="checkbox"
                               id={`visibility-${child.id}`}
                               checked={isChildVisible}
-                              onChange={() => onToggleVisibility && onToggleVisibility(child.id)}
+                              onChange={() => handleVisibilityToggle(child.id)}
                               className="category-checkbox"
                             />
                             <label 
