@@ -1,0 +1,42 @@
+/* Header component styles */
+.header {
+    background-color: white;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    transition: box-shadow var(--transition-normal);
+  }
+  
+  .header.scrolled {
+    box-shadow: var(--shadow-md);
+  }
+  
+  .nav-link {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--radius-md);
+    font-weight: 500;
+    font-size: 0.875rem;
+    color: var(--color-gray-700);
+    transition: color var(--transition-fast),
+      background-color var(--transition-fast);
+  }
+  
+  .nav-link:hover {
+    color: var(--color-primary);
+    background-color: var(--color-gray-50);
+    text-decoration: none;
+  }
+  
+  .nav-link.active {
+    color: var(--color-primary);
+    background-color: var(--color-primary-50);
+  }
+  
+  .nav-link svg {
+    margin-right: 0.5rem;
+    width: 1rem;
+    height: 1rem;
+  }

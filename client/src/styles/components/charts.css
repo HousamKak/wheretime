@@ -1,0 +1,186 @@
+/* Chart component styles */
+.chart-container {
+    position: relative;
+    margin: 1rem 0;
+  }
+  
+  .chart-title {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: var(--color-gray-800);
+  }
+  
+  .chart-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+  
+  .legend-item {
+    display: flex;
+    align-items: center;
+    font-size: 0.875rem;
+    color: var(--color-gray-700);
+  }
+  
+  .legend-color {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 0.5rem;
+  }
+  
+  /* D3 Styling */
+  .axis .domain {
+    stroke: var(--color-gray-300);
+  }
+  
+  .axis .tick line {
+    stroke: var(--color-gray-200);
+  }
+  
+  .axis .tick text {
+    fill: var(--color-gray-600);
+    font-size: 0.75rem;
+  }
+  
+  .grid line {
+    stroke: var(--color-gray-100);
+  }
+  
+  .tooltip {
+    position: absolute;
+    padding: 0.75rem;
+    background: white;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    pointer-events: none;
+    font-size: 0.75rem;
+    z-index: 100;
+    border: 1px solid var(--color-gray-200);
+    max-width: 200px;
+  }
+  
+  .tooltip-title {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    border-bottom: 1px solid var(--color-gray-200);
+    padding-bottom: 0.5rem;
+  }
+  
+  .tooltip-value {
+    display: flex;
+    justify-content: space-between;
+  }
+  
+  /* Category styles for charts */
+  .category-graph {
+    transition: all var(--transition-normal);
+    overflow: hidden;
+  }
+  
+  .category-graph-header {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background-color: var(--color-gray-50);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    border: 1px solid var(--color-gray-200);
+    cursor: pointer;
+    transition: background-color var(--transition-fast);
+  }
+  
+  .category-graph-header:hover {
+    background-color: var(--color-gray-100);
+  }
+  
+  .category-graph-header.active {
+    background-color: var(--color-primary-50);
+    border-color: var(--color-primary-light);
+  }
+  
+  .category-graph-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background-color: white;
+    border: 1px solid var(--color-gray-300);
+    margin-right: 0.75rem;
+    transition: transform var(--transition-fast);
+  }
+  
+  .category-graph-toggle.open {
+    transform: rotate(90deg);
+  }
+  
+  .category-graph-name {
+    display: flex;
+    align-items: center;
+    font-weight: 600;
+    color: var(--color-gray-800);
+  }
+  
+  .category-graph-color {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 0.75rem;
+  }
+  
+  .category-graph-value {
+    margin-left: auto;
+    font-weight: 600;
+    color: var(--color-gray-700);
+  }
+  
+  .category-graph-content {
+    border: 1px solid var(--color-gray-200);
+    border-top: none;
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+    overflow: hidden;
+  }
+  
+  .category-graph-children {
+    padding: 1rem;
+  }
+  
+  .subcategory-graph {
+    margin-bottom: 1rem;
+  }
+  
+  .subcategory-header {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 0.75rem;
+    background-color: var(--color-gray-50);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-gray-200);
+    margin-bottom: 0.5rem;
+  }
+  
+  .subcategory-name {
+    display: flex;
+    align-items: center;
+    font-weight: 500;
+    font-size: 0.875rem;
+    color: var(--color-gray-700);
+  }
+  
+  .subcategory-color {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 0.5rem;
+  }
+  
+  .subcategory-value {
+    margin-left: auto;
+    font-weight: 500;
+    font-size: 0.875rem;
+    color: var(--color-gray-700);
+  }

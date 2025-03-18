@@ -1,0 +1,121 @@
+/* CategoryManager component styles */
+.category-manager-container {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+  
+  @media (min-width: 768px) {
+    .category-manager-container {
+      grid-template-columns: 1fr 2fr;
+    }
+  }
+  
+  .category-form {
+    background-color: white;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    padding: 1.5rem;
+    border: 1px solid var(--color-gray-200);
+  }
+  
+  .category-form-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    color: var(--color-gray-800);
+  }
+  
+  .category-list {
+    background-color: white;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+    border: 1px solid var(--color-gray-200);
+  }
+  
+  .category-list-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--color-gray-200);
+  }
+  
+  .category-list-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--color-gray-800);
+  }
+  
+  .category-list-content {
+    padding: 1rem;
+  }
+  
+  .category-tree {
+    width: 100%;
+  }
+  
+  .category-tree-item {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--color-gray-100);
+    transition: background-color var(--transition-fast);
+  }
+  
+  .category-tree-item:hover {
+    background-color: var(--color-gray-50);
+  }
+  
+  .category-tree-item:last-child {
+    border-bottom: none;
+  }
+  
+  .category-name-wrapper {
+    display: flex;
+    align-items: center;
+    flex-grow: 1;
+  }
+  
+  .category-color-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 0.75rem;
+  }
+  
+  .category-actions {
+    display: flex;
+    gap: 0.5rem;
+  }
+  
+  /* Child categories */
+  .category-children {
+    padding-left: 1.5rem;
+    border-left: 1px dashed var(--color-gray-300);
+    margin-left: 0.75rem;
+  }
+  
+  /* Color picker */
+  .color-palette {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+  
+  .color-swatch {
+    width: 2rem;
+    height: 2rem;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  }
+  
+  .color-swatch:hover {
+    transform: scale(1.1);
+    box-shadow: var(--shadow-md);
+  }
+  
+  .color-swatch.active {
+    border: 2px solid var(--color-gray-800);
+    transform: scale(1.1);
+  }

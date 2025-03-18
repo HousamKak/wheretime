@@ -1,0 +1,27 @@
+/* Animation utilities */
+@keyframes spin {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+  
+  .animate-spin {
+    animation: spin 1s linear infinite;
+  }
+  
+  /* Animation for expanding/collapsing */
+  .expand-enter-active,
+  .expand-leave-active {
+    transition: all var(--transition-normal);
+    max-height: 300px;
+    overflow: hidden;
+  }
+  
+  .expand-enter-from,
+  .expand-leave-to {
+    max-height: 0;
+    opacity: 0;
+  }

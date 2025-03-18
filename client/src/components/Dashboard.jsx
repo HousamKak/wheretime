@@ -4,7 +4,7 @@ import TimeSeriesChart from './TimeSeriesChart';
 import Sidebar from './Sidebar';
 import CategoryLegend from './CategoryLegend';
 import axios from 'axios';
-
+import '../styles/components/dashboard.css';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const Dashboard = () => {
@@ -325,43 +325,6 @@ const Dashboard = () => {
 
   return (
     <div>
-      <style jsx>{`
-        .dashboard-root {
-          display: flex;
-          flex-direction: column;
-          gap: 16px;
-          width: 100%;
-        }
-        
-        @media (min-width: 1024px) {
-          .dashboard-root {
-            flex-direction: row;
-          }
-        }
-        
-        .sidebar {
-          width: 100%;
-        }
-        
-        @media (min-width: 1024px) {
-          .sidebar {
-            width: 250px;
-            flex-shrink: 0;
-          }
-        }
-        
-        .main-content {
-          width: 100%;
-        }
-        
-        @media (min-width: 1024px) {
-          .main-content {
-            flex: 1;
-            min-width: 0;
-            margin: 0 16px;
-          }
-        }
-      `}</style>
       
       <div className="dashboard-root">
         <div className="sidebar">

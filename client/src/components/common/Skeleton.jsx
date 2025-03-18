@@ -1,4 +1,5 @@
 import React from 'react';
+import '../../styles/components/skeleton.css';
 
 export const Skeleton = ({ type = 'text', width, height, className = '', count = 1 }) => {
   // Base skeleton animation class

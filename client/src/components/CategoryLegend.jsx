@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import '../styles/components/categorylegend.css';
 
 const CategoryLegend = ({ 
   categories, 

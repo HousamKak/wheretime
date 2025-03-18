@@ -1,0 +1,91 @@
+/* CategoryLegend component styles */
+.category-legend {
+    background-color: white;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+    border: 1px solid var(--color-gray-200);
+  }
+  
+  .category-item {
+    margin-bottom: 0.5rem;
+  }
+  
+  .category-graph-header {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background-color: var(--color-gray-50);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-gray-200);
+    cursor: pointer;
+    transition: background-color var(--transition-fast);
+  }
+  
+  .category-graph-header:hover {
+    background-color: var(--color-gray-100);
+  }
+  
+  .category-graph-header.active {
+    background-color: var(--color-primary-50);
+    border-color: var(--color-primary-light);
+  }
+  
+  .category-graph-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background-color: white;
+    border: 1px solid var(--color-gray-300);
+    margin-right: 0.75rem;
+    transition: transform var(--transition-fast);
+  }
+  
+  .category-graph-toggle.open {
+    transform: rotate(90deg);
+  }
+  
+  .category-graph-name {
+    display: flex;
+    align-items: center;
+    font-weight: 600;
+    color: var(--color-gray-800);
+  }
+  
+  .category-graph-color {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 0.75rem;
+  }
+  
+  .category-graph-children {
+    padding: 0.5rem 1rem 0.5rem 2.5rem;
+  }
+  
+  .subcategory-header {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 0.75rem;
+    background-color: var(--color-gray-50);
+    border-radius: var(--radius-md);
+    margin-bottom: 0.5rem;
+  }
+  
+  .subcategory-name {
+    display: flex;
+    align-items: center;
+    font-weight: 500;
+    font-size: 0.875rem;
+    color: var(--color-gray-700);
+  }
+  
+  .subcategory-color {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 0.5rem;
+  }

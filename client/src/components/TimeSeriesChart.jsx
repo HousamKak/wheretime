@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import * as d3 from 'd3';
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 
 const TimeSeriesChart = ({ data, categories, categoryVisibility, expandedCategories = {} }) => {
   const svgRef = useRef();

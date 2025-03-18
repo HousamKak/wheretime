@@ -1,0 +1,70 @@
+/* Skeleton loading component styles */
+.animate-pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.5;
+    }
+  }
+  
+  .skeleton {
+    background-color: var(--color-gray-200);
+    border-radius: var(--radius-md);
+    display: inline-block;
+  }
+  
+  .skeleton.text {
+    height: 1rem;
+    width: 100%;
+    border-radius: var(--radius-full);
+  }
+  
+  .skeleton.heading {
+    height: 1.5rem;
+    width: 75%;
+    border-radius: var(--radius-full);
+  }
+  
+  .skeleton.circle {
+    border-radius: 50%;
+  }
+  
+  .skeleton.rectangle {
+    border-radius: var(--radius-md);
+  }
+  
+  .skeleton.card {
+    width: 100%;
+    border-radius: var(--radius-lg);
+  }
+  
+  .skeleton.button {
+    height: 2.5rem;
+    border-radius: var(--radius-md);
+  }
+  
+  .skeleton.avatar {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+  }
+  
+  .skeleton.line {
+    height: 0.5rem;
+    border-radius: var(--radius-full);
+  }
+  
+  .skeleton.input {
+    height: 2.5rem;
+    border-radius: var(--radius-md);
+    width: 100%;
+  }
+  
+  .skeleton-space-y-2 > * + * {
+    margin-top: 0.5rem;
+  }

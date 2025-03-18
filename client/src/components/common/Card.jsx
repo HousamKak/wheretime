@@ -1,5 +1,5 @@
 import React from 'react';
-
+import '../../styles/components/card.css';
 export const Card = ({ children, className = '' }) => {
   return (
     <div className={`bg-white rounded-lg shadow-md overflow-hidden ${className}`}>

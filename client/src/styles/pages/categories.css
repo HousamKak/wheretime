@@ -1,0 +1,126 @@
+/* Categories page styles */
+.categories-page {
+    margin-bottom: 2rem;
+  }
+  
+  .categories-page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+  }
+  
+  .categories-page-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--color-gray-900);
+  }
+  
+  .categories-page-actions {
+    display: flex;
+    gap: 0.5rem;
+  }
+  
+  .categories-layout {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+  
+  @media (min-width: 768px) {
+    .categories-layout {
+      grid-template-columns: 1fr 2fr;
+    }
+  }
+  
+  .category-form-card {
+    background-color: white;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+  }
+  
+  .category-list-card {
+    background-color: white;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+  }
+  
+  .category-list-header {
+    padding: 1.25rem;
+    border-bottom: 1px solid var(--color-gray-200);
+    background-color: var(--color-gray-50);
+  }
+  
+  .category-list-content {
+    padding: 1.25rem;
+  }
+  
+  .category-nested-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  
+  .category-nested-item {
+    padding: 0.625rem;
+    border-bottom: 1px solid var(--color-gray-100);
+  }
+  
+  .category-item-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .category-color-indicator {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 0.75rem;
+  }
+  
+  .category-name-display {
+    display: flex;
+    align-items: center;
+    flex-grow: 1;
+  }
+  
+  .category-children-list {
+    margin-left: 1.5rem;
+    padding-left: 1rem;
+    border-left: 1px dashed var(--color-gray-300);
+    margin-top: 0.5rem;
+  }
+  
+  /* Color picker */
+  .color-picker-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+  
+  .color-option {
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: var(--radius-md);
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: transform 0.15s ease, border-color 0.15s ease;
+  }
+  
+  .color-option:hover {
+    transform: scale(1.1);
+  }
+  
+  .color-option.selected {
+    border-color: var(--color-gray-800);
+    transform: scale(1.1);
+  }
+  
+  .color-picker-custom {
+    margin-top: 0.5rem;
+  }

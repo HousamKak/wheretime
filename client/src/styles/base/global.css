@@ -1,0 +1,11 @@
+/* Import base styles */
+@import './variables.css';
+@import './reset.css';
+@import './typography.css';
+
+/* Import utility styles */
+@import '../utils/spacing.css';
+@import '../utils/layout.css';
+@import '../utils/animations.css';
+
+/* No component or page specific styles here - those should be imported directly by components */
