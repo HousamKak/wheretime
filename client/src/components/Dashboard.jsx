@@ -4,6 +4,7 @@ import LeftSidebar from './LeftSidebar';
 import RightSidebar from './RightSidebar';
 import '../styles/components/dashboard.css';
 import { Button } from './common/Button';
+
 const Dashboard = ({ 
   categories,
   logs,
@@ -40,41 +41,6 @@ const Dashboard = ({
   const [categoryVisibility, setCategoryVisibility] = useState(initialCategoryVisibility);
   const [expandedCategories, setExpandedCategories] = useState(initialExpandedCategories);
   const [presetRange, setPresetRange] = useState('30days');
-
-  // Update state when categories change
-  useEffect(() => {
-    if (categories && categories.length > 0) {
-      // Only update if we don't already have entries for these categories
-      setCategoryVisibility(prev => {
-        const newVisibility = { ...prev };
-        let updated = false;
-        
-        categories.forEach(category => {
-          if (newVisibility[category.id] === undefined) {
-            newVisibility[category.id] = true;
-            updated = true;
-          }
-        });
-        
-        return updated ? newVisibility : prev;
-      });
-      
-      // Update expanded state for new categories
-      setExpandedCategories(prev => {
-        const newExpanded = { ...prev };
-        let updated = false;
-        
-        categories.forEach(category => {
-          if (!category.parent_id && newExpanded[category.id] === undefined) {
-            newExpanded[category.id] = false;
-            updated = true;
-          }
-        });
-        
-        return updated ? newExpanded : prev;
-      });
-    }
-  }, [categories]);
 
   // Check for mobile view on initial load and resize
   useEffect(() => {
@@ -147,28 +113,67 @@ const Dashboard = ({
 
   // Toggle category visibility
   const toggleCategoryVisibility = (categoryId) => {
-    console.log("Toggling visibility for category:", categoryId);
     setCategoryVisibility(prev => ({
       ...prev,
-      [categoryId]: !(prev[categoryId] ?? true) // Default to true if undefined
+      [categoryId]: !prev[categoryId]
     }));
   };
   
   // Toggle category expansion
   const toggleCategoryExpansion = (categoryId) => {
-    console.log("Toggling expansion for category:", categoryId);
     setExpandedCategories(prev => ({
       ...prev,
-      [categoryId]: !(prev[categoryId] ?? false) // Default to false if undefined
+      [categoryId]: !prev[categoryId]
     }));
   };
 
   // Calculate total time from stats
   const totalTime = stats.reduce((total, stat) => total + (stat.totalTime || 0), 0);
 
-  // Log state
-  console.log("Category visibility:", categoryVisibility);
-  console.log("Expanded categories:", expandedCategories);
+  // Process logs data for the chart - simplified version
+  const processLogsForChart = () => {
+    if (!logs || logs.length === 0) {
+      return [];
+    }
+
+    // Create a lookup for valid categories
+    const validCategoryIds = {};
+    categories.forEach(cat => {
+      validCategoryIds[cat.id] = true;
+    });
+
+    // Group logs by date
+    const dateGroups = {};
+    
+    // First pass: Initialize days and valid categories
+    logs.forEach(log => {
+      if (!log.date) return;
+      
+      if (!dateGroups[log.date]) {
+        dateGroups[log.date] = {
+          date: new Date(log.date)
+        };
+        
+        // Initialize all categories to 0
+        categories.forEach(cat => {
+          dateGroups[log.date][`category_${cat.id}`] = 0;
+        });
+      }
+    });
+    
+    // Second pass: Add time values for logs with valid categories
+    logs.forEach(log => {
+      if (!log.date || !validCategoryIds[log.category_id]) return;
+      
+      const categoryKey = `category_${log.category_id}`;
+      dateGroups[log.date][categoryKey] += log.total_time || 0;
+    });
+
+    // Convert to array and sort by date
+    return Object.values(dateGroups).sort((a, b) => a.date - b.date);
+  };
+
+  const chartData = processLogsForChart();
 
   return (
     <div className="dashboard-container">
@@ -189,8 +194,16 @@ const Dashboard = ({
       <LeftSidebar 
         isOpen={leftSidebarOpen}
         onClose={() => setLeftSidebarOpen(false)}
-        dateRange={dateRange}
-        onDateRangeChange={onDateRangeChange}
+        dateRange={{
+          startDate: dateRange.start,
+          endDate: dateRange.end
+        }}
+        onDateRangeChange={(newRange) => {
+          onDateRangeChange({
+            start: newRange.startDate,
+            end: newRange.endDate
+          });
+        }}
         presetRange={presetRange}
         onPresetChange={handlePresetChange}
         totalTime={totalTime}
@@ -206,13 +219,13 @@ const Dashboard = ({
               <div className="spinner"></div>
               <p>Loading chart data...</p>
             </div>
-          ) : logs.length === 0 ? (
+          ) : chartData.length === 0 ? (
             <div className="chart-empty">
               <p>No time data available for the selected period</p>
             </div>
           ) : (
             <TimeSeriesChart
-              data={logs}
+              data={chartData}
               categories={categories}
               categoryVisibility={categoryVisibility}
               expandedCategories={expandedCategories}

@@ -8,7 +8,7 @@ const RightSidebar = ({
   categories, 
   categoryVisibility, 
   expandedCategories, 
-  onToggleExpand, 
+  onToggleExpand,
   onToggleVisibility 
 }) => {
   return (

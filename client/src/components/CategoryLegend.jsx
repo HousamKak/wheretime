@@ -1,96 +1,82 @@
-import React, { useCallback } from 'react';
+import React from 'react';
 import '../styles/components/categorylegend.css';
 
 const CategoryLegend = ({ 
   categories, 
-  categoryVisibility = {},  // Provide default empty object
-  expandedCategories = {},  // Provide default empty object
+  categoryVisibility = {}, 
+  expandedCategories = {}, 
   onToggleExpand,
   onToggleVisibility
 }) => {
-  // Process categories to create hierarchy
-  const processCategoryHierarchy = useCallback(() => {
-    const categoryMap = {};
+  // Simple function to organize categories into a hierarchy
+  const organizeCategories = () => {
     const rootCategories = [];
-
-    // First pass: Create category objects
-    categories.forEach(category => {
-      categoryMap[category.id] = {
-        ...category,
-        children: [],
+    const categoryMap = {};
+    
+    // Create objects for all categories
+    categories.forEach(cat => {
+      categoryMap[cat.id] = { 
+        ...cat, 
+        children: [] 
       };
     });
-
-    // Second pass: Build hierarchy
-    categories.forEach(category => {
-      if (category.parent_id) {
-        // This is a child category
-        if (categoryMap[category.parent_id]) {
-          categoryMap[category.parent_id].children.push(categoryMap[category.id]);
+    
+    // Organize into hierarchy
+    categories.forEach(cat => {
+      if (cat.parent_id) {
+        if (categoryMap[cat.parent_id]) {
+          categoryMap[cat.parent_id].children.push(categoryMap[cat.id]);
         }
       } else {
-        // This is a root category
-        rootCategories.push(categoryMap[category.id]);
+        rootCategories.push(categoryMap[cat.id]);
       }
     });
-
-    return { categoryMap, rootCategories };
-  }, [categories]);
-
-  const { rootCategories } = processCategoryHierarchy();
-
+    
+    return { rootCategories };
+  };
+  
+  const { rootCategories } = organizeCategories();
+  
   if (!rootCategories || rootCategories.length === 0) {
-    return <div className="category-legend-empty">No categories available to display</div>;
+    return <div className="category-legend-empty">No categories available</div>;
   }
-
+  
   return (
     <div className="category-legend">
       <h3 className="sidebar-heading">Chart Categories</h3>
       <div className="category-list">
         {rootCategories.map(category => {
-          // Use default false value if not defined
-          const isExpanded = !!expandedCategories[category.id];
-          const isVisible = categoryVisibility[category.id] !== undefined 
-            ? categoryVisibility[category.id] 
-            : true;  // Default to visible
+          const isVisible = categoryVisibility[category.id] !== false;
+          const isExpanded = expandedCategories[category.id] === true;
           const hasChildren = category.children && category.children.length > 0;
-
+          
           return (
             <div key={category.id} className="category-item">
-              <div 
-                className="category-header"
-                onClick={() => hasChildren && onToggleExpand && onToggleExpand(category.id)}
-              >
-                <div 
-                  className="category-visibility"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onToggleVisibility && onToggleVisibility(category.id);
-                  }}
-                >
+              <div className="category-header">
+                {/* Visibility checkbox */}
+                <div className="category-visibility">
                   <input
                     type="checkbox"
                     id={`visibility-${category.id}`}
                     checked={isVisible}
-                    onChange={() => {}} // Empty handler to avoid React warning
+                    onChange={() => onToggleVisibility && onToggleVisibility(category.id)}
                     className="category-checkbox"
                   />
                   <label 
                     htmlFor={`visibility-${category.id}`}
-                    className={`category-color-indicator ${isVisible ? '' : 'inactive'}`}
-                    style={{ backgroundColor: category.color || '#6B7280' }}
+                    className="category-color-indicator"
+                    style={{ backgroundColor: category.color || '#6B7280', opacity: isVisible ? 1 : 0.4 }}
                   ></label>
                 </div>
                 
+                {/* Category name */}
                 <div className="category-name">{category.name}</div>
                 
+                {/* Expand/collapse button (only for categories with children) */}
                 {hasChildren && (
                   <button
+                    onClick={() => onToggleExpand && onToggleExpand(category.id)}
                     className={`category-expand-btn ${isExpanded ? 'expanded' : ''}`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onToggleExpand && onToggleExpand(category.id);
-                    }}
                     aria-label={isExpanded ? 'Collapse category' : 'Expand category'}
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
@@ -99,35 +85,28 @@ const CategoryLegend = ({
                   </button>
                 )}
               </div>
-
+              
+              {/* Render children if expanded */}
               {isExpanded && hasChildren && (
                 <div className="subcategory-list">
                   {category.children.map(child => {
-                    const isChildVisible = categoryVisibility[child.id] !== undefined 
-                      ? categoryVisibility[child.id] 
-                      : true;  // Default to visible
+                    const isChildVisible = categoryVisibility[child.id] !== false;
                     
                     return (
                       <div key={child.id} className="subcategory-item">
-                        <div 
-                          className="subcategory-header"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onToggleVisibility && onToggleVisibility(child.id);
-                          }}
-                        >
+                        <div className="subcategory-header">
                           <div className="category-visibility">
                             <input
                               type="checkbox"
                               id={`visibility-${child.id}`}
                               checked={isChildVisible}
-                              onChange={() => {}} // Empty handler to avoid React warning
+                              onChange={() => onToggleVisibility && onToggleVisibility(child.id)}
                               className="category-checkbox"
                             />
                             <label 
                               htmlFor={`visibility-${child.id}`}
-                              className={`category-color-indicator ${isChildVisible ? '' : 'inactive'}`}
-                              style={{ backgroundColor: child.color || '#6B7280' }}
+                              className="category-color-indicator"
+                              style={{ backgroundColor: child.color || '#6B7280', opacity: isChildVisible ? 1 : 0.4 }}
                             ></label>
                           </div>
                           <div className="subcategory-name">{child.name}</div>
