@@ -24,11 +24,23 @@ const Dashboard = ({
 
   // Initialize category visibility on categories change
   useEffect(() => {
-    const initialVisibility = {};
-    categories.forEach(category => {
-      initialVisibility[category.id] = true;
-    });
-    setCategoryVisibility(initialVisibility);
+    if (categories && categories.length > 0) {
+      const initialVisibility = {};
+      categories.forEach(category => {
+        initialVisibility[category.id] = true;
+      });
+      setCategoryVisibility(initialVisibility);
+      
+      // Also initialize expanded categories
+      const initialExpanded = {};
+      categories.forEach(category => {
+        // Only set root categories as potentially expanded
+        if (!category.parent_id) {
+          initialExpanded[category.id] = false;
+        }
+      });
+      setExpandedCategories(initialExpanded);
+    }
   }, [categories]);
 
   // Check for mobile view on initial load and resize
@@ -58,7 +70,7 @@ const Dashboard = ({
     
     // Cleanup
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  }, [leftSidebarOpen, rightSidebarOpen]);
 
   // Handle preset range selection
   const handlePresetChange = (preset) => {
@@ -92,7 +104,7 @@ const Dashboard = ({
     }
 
     setPresetRange(preset);
-    onDateRangeChange({ startDate: start, endDate: end });
+    onDateRangeChange({ start, end });
   };
 
   // Format date to ISO format (YYYY-MM-DD)
@@ -102,6 +114,7 @@ const Dashboard = ({
 
   // Toggle category visibility
   const toggleCategoryVisibility = (categoryId) => {
+    console.log("Toggling visibility for category:", categoryId);
     setCategoryVisibility(prev => ({
       ...prev,
       [categoryId]: !prev[categoryId]
@@ -110,6 +123,7 @@ const Dashboard = ({
   
   // Toggle category expansion
   const toggleCategoryExpansion = (categoryId) => {
+    console.log("Toggling expansion for category:", categoryId);
     setExpandedCategories(prev => ({
       ...prev,
       [categoryId]: !prev[categoryId]
@@ -117,7 +131,11 @@ const Dashboard = ({
   };
 
   // Calculate total time from stats
-  const totalTime = stats.reduce((total, stat) => total + stat.totalTime, 0);
+  const totalTime = stats.reduce((total, stat) => total + (stat.totalTime || 0), 0);
+
+  // Debug logging
+  console.log("Category visibility:", categoryVisibility);
+  console.log("Expanded categories:", expandedCategories);
 
   return (
     <div className="dashboard-container">

@@ -21,6 +21,7 @@
   border: 1px solid var(--color-gray-200);
   border-radius: 6px;
   transition: all 0.2s;
+  cursor: pointer;
 }
 
 .category-header:hover {
@@ -31,6 +32,8 @@
   display: flex;
   align-items: center;
   margin-right: 8px;
+  position: relative;
+  z-index: 5;
 }
 
 .category-checkbox {
@@ -76,6 +79,7 @@
   cursor: pointer;
   transition: transform 0.2s;
   border-radius: 50%;
+  z-index: 5;
 }
 
 .category-expand-btn:hover {
@@ -107,6 +111,7 @@
   border: 1px solid var(--color-gray-200);
   border-radius: 4px;
   transition: all 0.2s;
+  cursor: pointer;
 }
 
 .subcategory-header:hover {

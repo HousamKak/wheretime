@@ -54,19 +54,28 @@ const CategoryLegend = ({
 
           return (
             <div key={category.id} className="category-item">
-              <div className="category-header">
-                <div className="category-visibility">
+              <div 
+                className="category-header"
+                onClick={() => hasChildren && onToggleExpand(category.id)}
+              >
+                <div 
+                  className="category-visibility"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onToggleVisibility(category.id);
+                  }}
+                >
                   <input
                     type="checkbox"
                     id={`visibility-${category.id}`}
                     checked={isVisible}
-                    onChange={() => onToggleVisibility(category.id)}
+                    onChange={() => {}}
                     className="category-checkbox"
                   />
                   <label 
                     htmlFor={`visibility-${category.id}`}
                     className={`category-color-indicator ${isVisible ? '' : 'inactive'}`}
-                    style={{ backgroundColor: category.color }}
+                    style={{ backgroundColor: category.color || '#6B7280' }}
                   ></label>
                 </div>
                 
@@ -75,7 +84,10 @@ const CategoryLegend = ({
                 {hasChildren && (
                   <button
                     className={`category-expand-btn ${isExpanded ? 'expanded' : ''}`}
-                    onClick={() => onToggleExpand(category.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onToggleExpand(category.id);
+                    }}
                     aria-label={isExpanded ? 'Collapse category' : 'Expand category'}
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
@@ -92,19 +104,25 @@ const CategoryLegend = ({
                     
                     return (
                       <div key={child.id} className="subcategory-item">
-                        <div className="subcategory-header">
+                        <div 
+                          className="subcategory-header"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onToggleVisibility(child.id);
+                          }}
+                        >
                           <div className="category-visibility">
                             <input
                               type="checkbox"
                               id={`visibility-${child.id}`}
                               checked={isChildVisible}
-                              onChange={() => onToggleVisibility(child.id)}
+                              onChange={() => {}}
                               className="category-checkbox"
                             />
                             <label 
                               htmlFor={`visibility-${child.id}`}
                               className={`category-color-indicator ${isChildVisible ? '' : 'inactive'}`}
-                              style={{ backgroundColor: child.color }}
+                              style={{ backgroundColor: child.color || '#6B7280' }}
                             ></label>
                           </div>
                           <div className="subcategory-name">{child.name}</div>

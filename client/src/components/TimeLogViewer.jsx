@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import axios from 'axios';
 import '../styles/components/timelogviewer.css'
-
+import { Button
+  
+ } from './common/Button';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const TimeLogViewer = () => {
@@ -269,7 +271,7 @@ const TimeLogViewer = () => {
       <div className="p-4 bg-red-50 text-red-700 rounded-md">
         <h2 className="text-lg font-semibold">Error</h2>
         <p>{error}</p>
-        <button 
+        <Button 
           className="mt-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
           onClick={() => {
             setError(null);
@@ -277,7 +279,7 @@ const TimeLogViewer = () => {
           }}
         >
           Retry
-        </button>
+        </Button>
       </div>
     );
   }
@@ -383,18 +385,18 @@ const TimeLogViewer = () => {
                             {log.notes || <span className="text-gray-400 italic">No notes</span>}
                           </td>
                           <td className="p-3 whitespace-nowrap text-right">
-                            <button
+                            <Button
                               onClick={() => handleEdit(log)}
                               className="px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 mr-2 text-sm"
                             >
                               Edit
-                            </button>
-                            <button
+                            </Button>
+                            <Button
                               onClick={() => handleDelete(log.id)}
                               className="px-3 py-1 bg-red-500 text-white rounded-md hover:bg-red-600 text-sm"
                             >
                               Delete
-                            </button>
+                            </Button>
                           </td>
                         </tr>
                       ))}
@@ -523,20 +525,20 @@ const TimeLogViewer = () => {
             </div>
             
             <div className="flex justify-end space-x-3">
-              <button
-                type="button"
+              <Button
+                type="Button"
                 onClick={handleCancelEdit}
                 className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100"
               >
                 Cancel
-              </button>
-              <button
-                type="button"
+              </Button>
+              <Button
+                type="Button"
                 onClick={handleSaveEdit}
                 className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
               >
                 Save Changes
-              </button>
+              </Button>
             </div>
           </div>
         </div>
