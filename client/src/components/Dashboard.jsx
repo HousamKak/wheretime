@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import TimeSeriesChart from './TimeSeriesChart';
 import LeftSidebar from './LeftSidebar';
 import RightSidebar from './RightSidebar';
 import '../styles/components/dashboard.css';
-
+import { Button } from './common/Button';
 const Dashboard = ({ 
   categories,
   logs,
@@ -17,29 +17,62 @@ const Dashboard = ({
   const [rightSidebarOpen, setRightSidebarOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   
+  // Initialize state objects immediately with useMemo
+  const initialCategoryVisibility = useMemo(() => {
+    if (!categories || categories.length === 0) return {};
+    return categories.reduce((acc, category) => {
+      acc[category.id] = true;
+      return acc;
+    }, {});
+  }, [categories]);
+
+  const initialExpandedCategories = useMemo(() => {
+    if (!categories || categories.length === 0) return {};
+    return categories.reduce((acc, category) => {
+      if (!category.parent_id) {
+        acc[category.id] = false;
+      }
+      return acc;
+    }, {});
+  }, [categories]);
+  
   // Track category visibility and expanding state
-  const [categoryVisibility, setCategoryVisibility] = useState({});
-  const [expandedCategories, setExpandedCategories] = useState({});
+  const [categoryVisibility, setCategoryVisibility] = useState(initialCategoryVisibility);
+  const [expandedCategories, setExpandedCategories] = useState(initialExpandedCategories);
   const [presetRange, setPresetRange] = useState('30days');
 
-  // Initialize category visibility on categories change
+  // Update state when categories change
   useEffect(() => {
     if (categories && categories.length > 0) {
-      const initialVisibility = {};
-      categories.forEach(category => {
-        initialVisibility[category.id] = true;
+      // Only update if we don't already have entries for these categories
+      setCategoryVisibility(prev => {
+        const newVisibility = { ...prev };
+        let updated = false;
+        
+        categories.forEach(category => {
+          if (newVisibility[category.id] === undefined) {
+            newVisibility[category.id] = true;
+            updated = true;
+          }
+        });
+        
+        return updated ? newVisibility : prev;
       });
-      setCategoryVisibility(initialVisibility);
       
-      // Also initialize expanded categories
-      const initialExpanded = {};
-      categories.forEach(category => {
-        // Only set root categories as potentially expanded
-        if (!category.parent_id) {
-          initialExpanded[category.id] = false;
-        }
+      // Update expanded state for new categories
+      setExpandedCategories(prev => {
+        const newExpanded = { ...prev };
+        let updated = false;
+        
+        categories.forEach(category => {
+          if (!category.parent_id && newExpanded[category.id] === undefined) {
+            newExpanded[category.id] = false;
+            updated = true;
+          }
+        });
+        
+        return updated ? newExpanded : prev;
       });
-      setExpandedCategories(initialExpanded);
     }
   }, [categories]);
 
@@ -117,7 +150,7 @@ const Dashboard = ({
     console.log("Toggling visibility for category:", categoryId);
     setCategoryVisibility(prev => ({
       ...prev,
-      [categoryId]: !prev[categoryId]
+      [categoryId]: !(prev[categoryId] ?? true) // Default to true if undefined
     }));
   };
   
@@ -126,14 +159,14 @@ const Dashboard = ({
     console.log("Toggling expansion for category:", categoryId);
     setExpandedCategories(prev => ({
       ...prev,
-      [categoryId]: !prev[categoryId]
+      [categoryId]: !(prev[categoryId] ?? false) // Default to false if undefined
     }));
   };
 
   // Calculate total time from stats
   const totalTime = stats.reduce((total, stat) => total + (stat.totalTime || 0), 0);
 
-  // Debug logging
+  // Log state
   console.log("Category visibility:", categoryVisibility);
   console.log("Expanded categories:", expandedCategories);
 
@@ -141,7 +174,7 @@ const Dashboard = ({
     <div className="dashboard-container">
       {/* Left Sidebar Toggle Button (Visible when sidebar is closed) */}
       {!leftSidebarOpen && (
-        <button 
+        <Button 
           className="sidebar-toggle left-toggle"
           onClick={() => setLeftSidebarOpen(true)}
           aria-label="Open left sidebar"
@@ -149,7 +182,7 @@ const Dashboard = ({
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
             <path fillRule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clipRule="evenodd" />
           </svg>
-        </button>
+        </Button>
       )}
       
       {/* Left Sidebar Component */}
@@ -190,7 +223,7 @@ const Dashboard = ({
       
       {/* Right Sidebar Toggle Button (Visible when sidebar is closed) */}
       {!rightSidebarOpen && (
-        <button 
+        <Button 
           className="sidebar-toggle right-toggle"
           onClick={() => setRightSidebarOpen(true)}
           aria-label="Open right sidebar"
@@ -198,19 +231,21 @@ const Dashboard = ({
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
             <path fillRule="evenodd" d="M7.21 5.23a.75.75 0 01.02-1.06l4.5-4.25a.75.75 0 011.08 0l4.5 4.25a.75.75 0 11-1.04 1.08L12.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25z" clipRule="evenodd" />
           </svg>
-        </button>
+        </Button>
       )}
       
-      {/* Right Sidebar Component */}
-      <RightSidebar 
-        isOpen={rightSidebarOpen}
-        onClose={() => setRightSidebarOpen(false)}
-        categories={categories}
-        categoryVisibility={categoryVisibility}
-        expandedCategories={expandedCategories}
-        onToggleExpand={toggleCategoryExpansion}
-        onToggleVisibility={toggleCategoryVisibility}
-      />
+      {/* Right Sidebar Component - Only render when we have proper state initialized */}
+      {Object.keys(categoryVisibility).length > 0 && (
+        <RightSidebar 
+          isOpen={rightSidebarOpen}
+          onClose={() => setRightSidebarOpen(false)}
+          categories={categories}
+          categoryVisibility={categoryVisibility}
+          expandedCategories={expandedCategories}
+          onToggleExpand={toggleCategoryExpansion}
+          onToggleVisibility={toggleCategoryVisibility}
+        />
+      )}
     </div>
   );
 };

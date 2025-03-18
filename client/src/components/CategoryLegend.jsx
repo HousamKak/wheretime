@@ -3,8 +3,8 @@ import '../styles/components/categorylegend.css';
 
 const CategoryLegend = ({ 
   categories, 
-  categoryVisibility,
-  expandedCategories,
+  categoryVisibility = {},  // Provide default empty object
+  expandedCategories = {},  // Provide default empty object
   onToggleExpand,
   onToggleVisibility
 }) => {
@@ -48,28 +48,31 @@ const CategoryLegend = ({
       <h3 className="sidebar-heading">Chart Categories</h3>
       <div className="category-list">
         {rootCategories.map(category => {
-          const isExpanded = expandedCategories[category.id];
-          const isVisible = categoryVisibility[category.id];
+          // Use default false value if not defined
+          const isExpanded = !!expandedCategories[category.id];
+          const isVisible = categoryVisibility[category.id] !== undefined 
+            ? categoryVisibility[category.id] 
+            : true;  // Default to visible
           const hasChildren = category.children && category.children.length > 0;
 
           return (
             <div key={category.id} className="category-item">
               <div 
                 className="category-header"
-                onClick={() => hasChildren && onToggleExpand(category.id)}
+                onClick={() => hasChildren && onToggleExpand && onToggleExpand(category.id)}
               >
                 <div 
                   className="category-visibility"
                   onClick={(e) => {
                     e.stopPropagation();
-                    onToggleVisibility(category.id);
+                    onToggleVisibility && onToggleVisibility(category.id);
                   }}
                 >
                   <input
                     type="checkbox"
                     id={`visibility-${category.id}`}
                     checked={isVisible}
-                    onChange={() => {}}
+                    onChange={() => {}} // Empty handler to avoid React warning
                     className="category-checkbox"
                   />
                   <label 
@@ -86,7 +89,7 @@ const CategoryLegend = ({
                     className={`category-expand-btn ${isExpanded ? 'expanded' : ''}`}
                     onClick={(e) => {
                       e.stopPropagation();
-                      onToggleExpand(category.id);
+                      onToggleExpand && onToggleExpand(category.id);
                     }}
                     aria-label={isExpanded ? 'Collapse category' : 'Expand category'}
                   >
@@ -100,7 +103,9 @@ const CategoryLegend = ({
               {isExpanded && hasChildren && (
                 <div className="subcategory-list">
                   {category.children.map(child => {
-                    const isChildVisible = categoryVisibility[child.id];
+                    const isChildVisible = categoryVisibility[child.id] !== undefined 
+                      ? categoryVisibility[child.id] 
+                      : true;  // Default to visible
                     
                     return (
                       <div key={child.id} className="subcategory-item">
@@ -108,7 +113,7 @@ const CategoryLegend = ({
                           className="subcategory-header"
                           onClick={(e) => {
                             e.stopPropagation();
-                            onToggleVisibility(child.id);
+                            onToggleVisibility && onToggleVisibility(child.id);
                           }}
                         >
                           <div className="category-visibility">
@@ -116,7 +121,7 @@ const CategoryLegend = ({
                               type="checkbox"
                               id={`visibility-${child.id}`}
                               checked={isChildVisible}
-                              onChange={() => {}}
+                              onChange={() => {}} // Empty handler to avoid React warning
                               className="category-checkbox"
                             />
                             <label 
