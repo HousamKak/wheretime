@@ -36,6 +36,8 @@ const CategoryCharts = ({
   // Close the modal
   const handleCloseModal = () => {
     setIsModalOpen(false);
+    // Small delay before clearing selected category to prevent UI flicker
+    setTimeout(() => setSelectedCategory(null), 300);
   };
   
   // Toggle subcategory visibility in the expanded modal view
@@ -87,6 +89,9 @@ const CategoryCharts = ({
     // Format time for display
     const formattedTime = formatTime(totalTime);
     
+    // Each mini chart needs a unique ID
+    const miniChartId = `mini-chart-${category.id}`;
+    
     return (
       <div key={category.id} className="cc-category-mini-chart">
         <div className="cc-category-mini-header">
@@ -101,30 +106,15 @@ const CategoryCharts = ({
         </div>
         
         <div className="cc-category-mini-content">
-          {totalTime > 0 ? (
-            <TimeSeriesChart 
-              data={data}
-              categories={[category, ...childCategories]}
-              categoryVisibility={filteredVisibility}
-              expandedCategories={{ [category.id]: true }}
-              isMinified={true}
-              chartId={`mini-chart-${category.id}`}
-            />
-          ) : (
-            <div className="cc-empty-chart">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="12" y1="2" x2="12" y2="6"></line>
-                <line x1="12" y1="18" x2="12" y2="22"></line>
-                <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line>
-                <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
-                <line x1="2" y1="12" x2="6" y2="12"></line>
-                <line x1="18" y1="12" x2="22" y2="12"></line>
-                <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
-                <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
-              </svg>
-              <span>No data for this period</span>
-            </div>
-          )}
+          {/* Always render the chart regardless of totalTime */}
+          <TimeSeriesChart 
+            data={data}
+            categories={[category, ...childCategories]}
+            categoryVisibility={filteredVisibility}
+            expandedCategories={{ [category.id]: true }}
+            isMinified={true}
+            chartId={miniChartId}
+          />
         </div>
         
         <div className="cc-category-mini-footer">
@@ -172,6 +162,9 @@ const CategoryCharts = ({
       return sum + (day[key] || 0);
     }, 0);
     
+    // Create a unique ID for the modal chart
+    const modalChartId = `modal-chart-${selectedCategory.id}-${Date.now()}`;
+    
     return (
       <Modal
         isOpen={isModalOpen}
@@ -203,13 +196,13 @@ const CategoryCharts = ({
             </div>
           )}
           
-          <div className="cc-modal-chart" style={{ display: 'flex', flex: '1 1 auto', minHeight: '0' }}>
+          <div className="cc-modal-chart">
             <TimeSeriesChart 
               data={data}
               categories={[selectedCategory, ...childCategories]}
               categoryVisibility={modalVisibility}
               expandedCategories={{ [selectedCategory.id]: true }}
-              chartId={`modal-chart-${selectedCategory.id}`}
+              chartId={modalChartId}
             />
           </div>
         </div>

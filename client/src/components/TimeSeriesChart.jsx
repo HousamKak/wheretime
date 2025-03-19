@@ -55,34 +55,54 @@ const TimeSeriesChart = ({ data, categories, categoryVisibility, expandedCategor
   useEffect(() => {
     const updateDimensions = () => {
       if (chartContainerRef.current) {
-        const containerWidth = chartContainerRef.current.clientWidth;
+        // Get dimensions from bounding client rect for more accuracy
+        const rect = chartContainerRef.current.getBoundingClientRect();
+        const containerWidth = rect.width || chartContainerRef.current.clientWidth;
+        
         // Use different height for minified charts
-        const containerHeight = isMinified
-          ? 120 // Smaller height for minified charts
-          : Math.max(400, containerWidth * 0.5);
+        let containerHeight;
+        if (isMinified) {
+          containerHeight = 120; // Fixed height for minified charts
+        } else {
+          // For modal charts, use container height if available, otherwise calculate based on width
+          containerHeight = rect.height || Math.max(400, containerWidth * 0.5);
+        }
 
-        setDimensions({
-          width: containerWidth,
-          height: containerHeight
-        });
+        // Avoid setting dimensions if they're effectively zero
+        if (containerWidth > 10 && containerHeight > 10) {
+          setDimensions({
+            width: containerWidth,
+            height: containerHeight
+          });
+        }
       }
     };
 
-    // Initial sizing
-    updateDimensions();
+    // Initial sizing with a small delay to ensure DOM is ready
+    const initialTimer = setTimeout(updateDimensions, 50);
 
     // Add resize listener
-    const resizeObserver = new ResizeObserver(updateDimensions);
+    const resizeObserver = new ResizeObserver(entries => {
+      if (entries && entries.length > 0) {
+        updateDimensions();
+      }
+    });
+    
     if (chartContainerRef.current) {
       resizeObserver.observe(chartContainerRef.current);
     }
 
+    // If chart container changes size, update dimensions
+    window.addEventListener('resize', updateDimensions);
+
     // Cleanup
     return () => {
+      clearTimeout(initialTimer);
       if (chartContainerRef.current) {
         resizeObserver.unobserve(chartContainerRef.current);
       }
       resizeObserver.disconnect();
+      window.removeEventListener('resize', updateDimensions);
     };
   }, [isMinified]);
 
@@ -176,13 +196,20 @@ const TimeSeriesChart = ({ data, categories, categoryVisibility, expandedCategor
 
   // Create chart whenever data, dimensions, or visibility changes
   useEffect(() => {
+    // Only create chart if dimensions are valid
+    if (!dimensions.width || !dimensions.height || dimensions.width < 10 || dimensions.height < 10) {
+      console.log(`Skipping chart render for ${chartInstanceId} - invalid dimensions:`, dimensions);
+      return;
+    }
+
     // Clear previous chart
     if (svgRef.current) {
       // Use a specific selector with the chart ID to avoid affecting other charts
       d3.select(svgRef.current).selectAll("*").remove();
     }
 
-    if (!data || data.length === 0 || !dimensions.width || !dimensions.height || !categories || categories.length === 0) {
+    if (!data || data.length === 0 || !categories || categories.length === 0) {
+      console.log(`Skipping chart render for ${chartInstanceId} - no data or categories`);
       return;
     }
 

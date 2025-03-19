@@ -58,7 +58,10 @@ export const Modal = ({
   if (!isOpen) return null;
   
   return (
-    <div className="modal-overlay" onClick={handleOutsideClick}>
+    <div 
+      className="modal-overlay" 
+      onClick={handleOutsideClick}
+    >
       <div 
         ref={modalRef}
         className={`modal ${sizeClass}`}
