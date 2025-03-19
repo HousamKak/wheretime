@@ -46,7 +46,7 @@ export const Modal = ({
     sm: 'max-w-sm',
     md: 'max-w-md',
     lg: 'max-w-lg',
-    xl: 'max-w-xl',
+    xl: 'max-w-xl modal-xl', // Added custom class for xl
     '2xl': 'max-w-2xl',
     '3xl': 'max-w-3xl',
     '4xl': 'max-w-4xl',
@@ -62,19 +62,21 @@ export const Modal = ({
   
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto modal-overlay"
       onClick={handleOutsideClick}
+      style={{ 
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        backdropFilter: 'blur(2px)' 
+      }}
     >
-      {/* Backdrop */}
-      <div className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"></div>
-      
       {/* Modal */}
       <div 
         ref={modalRef}
-        className={`relative bg-white rounded-lg shadow-xl w-full ${sizeClass} z-10 transition-all transform`}
+        className={`relative bg-white rounded-lg shadow-xl w-full ${sizeClass} z-10 transition-all transform modal-container`}
+        style={{ maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 modal-header">
           <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
           <button
             type="button"
@@ -98,7 +100,7 @@ export const Modal = ({
         </div>
         
         {/* Content */}
-        <div className="px-6 py-4">
+        <div className="px-6 py-4 overflow-auto flex-1 modal-content">
           {children}
         </div>
       </div>

@@ -2,7 +2,9 @@ import React, { useState, useEffect, useMemo } from 'react';
 import TimeSeriesChart from './TimeSeriesChart';
 import LeftSidebar from './LeftSidebar';
 import RightSidebar from './RightSidebar';
+import CategoryCharts from './CategoryCharts';
 import '../styles/components/dashboard.css';
+import '../styles/components/categorycharts.css';
 import { Button } from './common/Button';
 
 const Dashboard = ({ 
@@ -369,6 +371,17 @@ const Dashboard = ({
             />
           )}
         </div>
+        
+        {/* Add Category Charts component */}
+        {!loading && chartData.length > 0 && (
+          <CategoryCharts
+            data={chartData}
+            categories={categories}
+            categoryVisibility={categoryVisibility}
+            expandedCategories={expandedCategories}
+            onToggleVisibility={toggleCategoryVisibility}
+          />
+        )}
       </main>
       
       {/* Right Sidebar Toggle Button (Visible when sidebar is closed) */}
