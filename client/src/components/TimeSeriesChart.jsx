@@ -58,18 +58,26 @@ const TimeSeriesChart = ({ data, categories, categoryVisibility, expandedCategor
         // Get dimensions from bounding client rect for more accuracy
         const rect = chartContainerRef.current.getBoundingClientRect();
         const containerWidth = rect.width || chartContainerRef.current.clientWidth;
-        
-        // Use different height for minified charts
+
+        // Use different height for minified vs modal charts
         let containerHeight;
         if (isMinified) {
           containerHeight = 120; // Fixed height for minified charts
         } else {
-          // For modal charts, use container height if available, otherwise calculate based on width
-          containerHeight = rect.height || Math.max(400, containerWidth * 0.5);
+          // For modal and full-size charts, prioritize using container height
+          if (rect.height > 50) {
+            // Use actual container height if it's reasonably sized
+            containerHeight = rect.height;
+          } else {
+            // Otherwise fallback to calculated height based on width
+            containerHeight = Math.max(400, containerWidth * 0.6);
+          }
         }
 
-        // Avoid setting dimensions if they're effectively zero
-        if (containerWidth > 10 && containerHeight > 10) {
+        console.log(`Chart ${chartInstanceId} dimensions: ${containerWidth}x${containerHeight}`);
+
+        // Only update dimensions if they've actually changed
+        if (dimensions.width !== containerWidth || dimensions.height !== containerHeight) {
           setDimensions({
             width: containerWidth,
             height: containerHeight
@@ -78,33 +86,34 @@ const TimeSeriesChart = ({ data, categories, categoryVisibility, expandedCategor
       }
     };
 
-    // Initial sizing with a small delay to ensure DOM is ready
-    const initialTimer = setTimeout(updateDimensions, 50);
+    // Initial sizing with multiple attempts to ensure DOM is fully rendered
+    updateDimensions(); // Try immediately
+    const initialTimer1 = setTimeout(updateDimensions, 50); // Try after 50ms
+    const initialTimer2 = setTimeout(updateDimensions, 200); // Try after 200ms
 
     // Add resize listener
-    const resizeObserver = new ResizeObserver(entries => {
-      if (entries && entries.length > 0) {
-        updateDimensions();
-      }
+    const resizeObserver = new ResizeObserver(() => {
+      updateDimensions();
     });
-    
+
     if (chartContainerRef.current) {
       resizeObserver.observe(chartContainerRef.current);
     }
 
-    // If chart container changes size, update dimensions
+    // Also listen to window resize events for good measure
     window.addEventListener('resize', updateDimensions);
 
     // Cleanup
     return () => {
-      clearTimeout(initialTimer);
+      clearTimeout(initialTimer1);
+      clearTimeout(initialTimer2);
       if (chartContainerRef.current) {
         resizeObserver.unobserve(chartContainerRef.current);
       }
       resizeObserver.disconnect();
       window.removeEventListener('resize', updateDimensions);
     };
-  }, [isMinified]);
+  }, [chartInstanceId, dimensions, isMinified]);
 
   // Helper function to prepare stacked data with expanded categories
   const prepareStackedData = (formattedData) => {
