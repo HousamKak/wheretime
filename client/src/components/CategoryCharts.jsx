@@ -83,9 +83,29 @@ const CategoryCharts = ({
         // Calculate total time for this category
         const totalTime = data.reduce((sum, day) => {
             const key = `category_${category.id}`;
-            return sum + (day[key] || 0);
+            // Some days might have the category data directly, others might have it nested
+            let dayValue = 0;
+
+            if (day[key] && typeof day[key] === 'object' && day[key].value !== undefined) {
+                // If the data is structured as an object with a value property
+                dayValue = day[key].value;
+            } else if (day[key] && typeof day[key] === 'number') {
+                // If the data is a simple number
+                dayValue = day[key];
+            } else if (day[key] && day[key].y1 !== undefined && day[key].y0 !== undefined) {
+                // If the data contains stacked coordinates
+                dayValue = day[key].y1 - day[key].y0;
+            }
+
+            return sum + dayValue;
         }, 0);
 
+        // For debugging
+        if (totalTime > 0) {
+            console.log(`Category ${category.name} (${category.id}) total time: ${totalTime} minutes`);
+        } else {
+            console.log(`Category ${category.name} (${category.id}) has no time recorded`);
+        }
         // Format time for display
         const formattedTime = formatTime(totalTime);
 
