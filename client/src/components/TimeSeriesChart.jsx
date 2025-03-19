@@ -5,15 +5,15 @@ import { format } from 'date-fns';
 const TimeSeriesChart = ({ data, categories, categoryVisibility, expandedCategories, isMinified = false, chartId = 'chart-' + Math.random().toString(36).substr(2, 9) }) => {
   // Unique ID for this chart instance to prevent interference
   const chartInstanceId = useMemo(() => chartId, [chartId]);
-  
+
   const svgRef = useRef();
   const chartContainerRef = useRef();
   const tooltipRef = useRef();
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const [chartError, setChartError] = useState(null);
-  
+
   // Different margins based on chart mode
-  const margin = isMinified 
+  const margin = isMinified
     ? { top: 10, right: 10, bottom: 20, left: 30 }
     : { top: 30, right: 70, bottom: 60, left: 70 };
 
@@ -57,10 +57,10 @@ const TimeSeriesChart = ({ data, categories, categoryVisibility, expandedCategor
       if (chartContainerRef.current) {
         const containerWidth = chartContainerRef.current.clientWidth;
         // Use different height for minified charts
-        const containerHeight = isMinified 
+        const containerHeight = isMinified
           ? 120 // Smaller height for minified charts
           : Math.max(400, containerWidth * 0.5);
-        
+
         setDimensions({
           width: containerWidth,
           height: containerHeight
@@ -70,13 +70,13 @@ const TimeSeriesChart = ({ data, categories, categoryVisibility, expandedCategor
 
     // Initial sizing
     updateDimensions();
-    
+
     // Add resize listener
     const resizeObserver = new ResizeObserver(updateDimensions);
     if (chartContainerRef.current) {
       resizeObserver.observe(chartContainerRef.current);
     }
-    
+
     // Cleanup
     return () => {
       if (chartContainerRef.current) {
@@ -92,20 +92,20 @@ const TimeSeriesChart = ({ data, categories, categoryVisibility, expandedCategor
     const expandedCategoryIds = Object.entries(expandedCategories)
       .filter(([_, isExpanded]) => isExpanded)
       .map(([id]) => parseInt(id));
-    
+
     try {
       return formattedData.map(dayData => {
         const day = { date: dayData.date };
         let yBase = 0;
-        
+
         // Process root categories
         categoryHierarchy.rootCategories.forEach(rootCategory => {
           if (categoryVisibility[rootCategory.id] !== false) {
             let categoryValue = dayData[`category_${rootCategory.id}`] || 0;
-            
+
             // Check if this category should be expanded
             const shouldExpand = expandedCategoryIds.includes(parseInt(rootCategory.id));
-            
+
             if (shouldExpand && rootCategory.children && rootCategory.children.length > 0) {
               // Subtract visible children values from parent
               let childrenTotal = 0;
@@ -115,35 +115,35 @@ const TimeSeriesChart = ({ data, categories, categoryVisibility, expandedCategor
                   childrenTotal += childValue;
                 }
               });
-              
+
               // Calculate parent's own value (subtract children values)
               const parentOwnValue = Math.max(0, categoryValue - childrenTotal);
-              
+
               // Add parent value first
-              day[`parent_${rootCategory.id}`] = { 
-                value: parentOwnValue, 
-                y0: yBase, 
-                y1: yBase + parentOwnValue, 
+              day[`parent_${rootCategory.id}`] = {
+                value: parentOwnValue,
+                y0: yBase,
+                y1: yBase + parentOwnValue,
                 category: rootCategory,
                 isParent: true
               };
-              
+
               yBase += parentOwnValue;
-              
+
               // Then add each visible child
               rootCategory.children.forEach(child => {
                 if (categoryVisibility[child.id] !== false) {
                   const childValue = dayData[`category_${child.id}`] || 0;
-                  
+
                   if (childValue > 0) {
-                    day[`child_${child.id}`] = { 
-                      value: childValue, 
-                      y0: yBase, 
-                      y1: yBase + childValue, 
+                    day[`child_${child.id}`] = {
+                      value: childValue,
+                      y0: yBase,
+                      y1: yBase + childValue,
                       category: child,
                       isChild: true
                     };
-                    
+
                     yBase += childValue;
                   }
                 }
@@ -151,19 +151,19 @@ const TimeSeriesChart = ({ data, categories, categoryVisibility, expandedCategor
             } else {
               // Category not expanded, just add the total value
               if (categoryValue > 0) {
-                day[`category_${rootCategory.id}`] = { 
-                  value: categoryValue, 
-                  y0: yBase, 
-                  y1: yBase + categoryValue, 
+                day[`category_${rootCategory.id}`] = {
+                  value: categoryValue,
+                  y0: yBase,
+                  y1: yBase + categoryValue,
                   category: rootCategory
                 };
-                
+
                 yBase += categoryValue;
               }
             }
           }
         });
-        
+
         day.total = yBase;
         return day;
       });
@@ -181,21 +181,21 @@ const TimeSeriesChart = ({ data, categories, categoryVisibility, expandedCategor
       // Use a specific selector with the chart ID to avoid affecting other charts
       d3.select(svgRef.current).selectAll("*").remove();
     }
-    
+
     if (!data || data.length === 0 || !dimensions.width || !dimensions.height || !categories || categories.length === 0) {
       return;
     }
 
     // Extract visible categories based on categoryVisibility
-    const visibleCategories = categories.filter(category => 
+    const visibleCategories = categories.filter(category =>
       categoryVisibility[category.id] !== false
     );
-    
+
     if (visibleCategories.length === 0) {
       // No visible categories, clear chart and show message
       const svg = d3.select(svgRef.current);
       svg.selectAll('*').remove();
-      
+
       svg.attr('width', dimensions.width)
         .attr('height', dimensions.height)
         .append('text')
@@ -204,13 +204,13 @@ const TimeSeriesChart = ({ data, categories, categoryVisibility, expandedCategor
         .attr('text-anchor', 'middle')
         .attr('fill', '#6B7280')
         .text('Please select at least one category to display data');
-      
+
       return;
     }
 
     try {
       setChartError(null);
-      
+
       // Create the SVG container with a specific ID to avoid interference between charts
       const svg = d3.select(svgRef.current)
         .attr('width', dimensions.width)
@@ -218,7 +218,7 @@ const TimeSeriesChart = ({ data, categories, categoryVisibility, expandedCategor
         .attr('id', `chart-svg-${chartInstanceId}`)
         .append('g')
         .attr('transform', `translate(${margin.left},${margin.top})`);
-      
+
       // Calculate inner dimensions
       const innerWidth = dimensions.width - margin.left - margin.right;
       const innerHeight = dimensions.height - margin.top - margin.bottom;
@@ -337,10 +337,10 @@ const TimeSeriesChart = ({ data, categories, categoryVisibility, expandedCategor
       }
 
       // Create areas for visible categories with proper stacking
-      const stackKeys = Object.keys(stackedData[0] || {}).filter(key => 
+      const stackKeys = Object.keys(stackedData[0] || {}).filter(key =>
         key !== 'date' && key !== 'total'
       );
-      
+
       // Create areas for each key
       stackKeys.forEach(key => {
         // Get a sample data point to extract category info
@@ -348,11 +348,11 @@ const TimeSeriesChart = ({ data, categories, categoryVisibility, expandedCategor
         if (!samplePoint || !samplePoint.category) {
           return;
         }
-        
+
         const category = samplePoint.category;
         const isChild = key.startsWith('child_');
         const isParent = key.startsWith('parent_');
-        
+
         // Area generator
         const areaGenerator = d3.area()
           .x(d => xScale(d.date))
@@ -439,12 +439,12 @@ const TimeSeriesChart = ({ data, categories, categoryVisibility, expandedCategor
               categoryHierarchy.rootCategories.forEach(rootCategory => {
                 if (categoryVisibility[rootCategory.id] !== false) {
                   const isExpanded = expandedCategories[rootCategory.id] === true;
-                  
+
                   if (isExpanded) {
                     // Add parent category (its own value)
                     const parentKey = `parent_${rootCategory.id}`;
                     const parentData = d[parentKey];
-                    
+
                     if (parentData && parentData.value > 0) {
                       tooltipContent += `
                         <div style="display: flex; justify-content: space-between; margin-bottom: 4px; align-items: center;">
@@ -456,13 +456,13 @@ const TimeSeriesChart = ({ data, categories, categoryVisibility, expandedCategor
                         </div>
                       `;
                     }
-                    
+
                     // Add visible children
                     rootCategory.children.forEach(child => {
                       if (categoryVisibility[child.id] !== false) {
                         const childKey = `child_${child.id}`;
                         const childData = d[childKey];
-                        
+
                         if (childData && childData.value > 0) {
                           tooltipContent += `
                             <div style="display: flex; justify-content: space-between; margin-bottom: 4px; align-items: center; padding-left: 16px;">
@@ -480,7 +480,7 @@ const TimeSeriesChart = ({ data, categories, categoryVisibility, expandedCategor
                     // Add the whole category
                     const categoryKey = `category_${rootCategory.id}`;
                     const categoryData = d[categoryKey];
-                    
+
                     if (categoryData && categoryData.value > 0) {
                       tooltipContent += `
                         <div style="display: flex; justify-content: space-between; margin-bottom: 4px; align-items: center;">
@@ -562,7 +562,7 @@ const TimeSeriesChart = ({ data, categories, categoryVisibility, expandedCategor
       <div className="flex flex-col items-center justify-center h-64 bg-red-50 border border-red-200 rounded-lg p-4">
         <div className="text-red-600 font-medium mb-2">Chart Error</div>
         <p className="text-red-700 text-sm">{chartError}</p>
-        <button 
+        <button
           className="mt-3 px-3 py-1 bg-red-100 hover:bg-red-200 text-red-700 text-sm rounded-md"
           onClick={() => setChartError(null)}
         >
@@ -582,18 +582,29 @@ const TimeSeriesChart = ({ data, categories, categoryVisibility, expandedCategor
   }
 
   return (
-    <div 
-      className="relative w-full h-full" 
+    <div
+      className="relative w-full h-full"
       ref={chartContainerRef}
-      style={{ isolation: 'isolate' }} // Ensures this chart doesn't leak out
+      style={{
+        isolation: 'isolate', // Ensures this chart doesn't leak out
+        display: 'flex',      // Allow flex sizing
+        flexDirection: 'column',
+        flex: '1 1 auto',     // Allow growing and shrinking
+        minHeight: '0',       // Important for flex child sizing
+        overflow: 'hidden'    // Prevent scrolling
+      }}
     >
-      <svg 
-        ref={svgRef} 
+      <svg
+        ref={svgRef}
         className="w-full h-full"
-        style={{ position: 'relative', zIndex: 1 }}
+        style={{
+          position: 'relative',
+          zIndex: 1,
+          flex: '1 1 auto'    // Allow the SVG to grow/shrink as needed
+        }}
       ></svg>
-      <div 
-        ref={tooltipRef} 
+      <div
+        ref={tooltipRef}
         className="absolute"
         style={{ visibility: 'hidden', zIndex: 2 }}
       ></div>

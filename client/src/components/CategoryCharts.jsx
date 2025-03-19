@@ -13,6 +13,7 @@ const CategoryCharts = ({
   // State for modal control
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  
   // Ref for scrollable container
   const scrollContainerRef = useRef(null);
   
@@ -202,7 +203,7 @@ const CategoryCharts = ({
             </div>
           )}
           
-          <div className="cc-modal-chart">
+          <div className="cc-modal-chart" style={{ display: 'flex', flex: '1 1 auto', minHeight: '0' }}>
             <TimeSeriesChart 
               data={data}
               categories={[selectedCategory, ...childCategories]}
