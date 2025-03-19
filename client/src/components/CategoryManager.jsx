@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-
+import '../styles/components/categorymanager.css';
+import { Button } from './common/Button';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const CategoryManager = () => {
@@ -200,18 +201,18 @@ const CategoryManager = () => {
             </div>
           </td>
           <td className="border-b p-3 text-right">
-            <button
+            <Button
               onClick={() => handleEdit(category)}
               className="px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 mr-2 text-sm"
             >
               Edit
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => handleDelete(category.id)}
               className="px-3 py-1 bg-red-500 text-white rounded-md hover:bg-red-600 text-sm"
             >
               Delete
-            </button>
+            </Button>
           </td>
         </tr>
         {category.children && category.children.length > 0 && 
@@ -254,7 +255,7 @@ const CategoryManager = () => {
       <div className="p-4 bg-red-50 text-red-700 rounded-md">
         <h2 className="text-lg font-semibold">Error</h2>
         <p>{error}</p>
-        <button 
+        <Button 
           className="mt-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
           onClick={() => {
             setError(null);
@@ -262,7 +263,7 @@ const CategoryManager = () => {
           }}
         >
           Retry
-        </button>
+        </Button>
       </div>
     );
   }
@@ -330,15 +331,15 @@ const CategoryManager = () => {
                 </label>
                 <div className="flex flex-wrap gap-2 mb-2">
                   {colorPalette.map(color => (
-                    <button
+                    <Button
                       key={color}
-                      type="button"
+                      type="Button"
                       className={`w-8 h-8 rounded-full border-2 ${
                         categoryForm.color === color ? 'border-black' : 'border-transparent'
                       }`}
                       style={{ backgroundColor: color }}
                       onClick={() => handleColorSelect(color)}
-                    ></button>
+                    ></Button>
                   ))}
                 </div>
                 <input
@@ -351,21 +352,21 @@ const CategoryManager = () => {
               </div>
               
               <div className="flex justify-between">
-                <button
+                <Button
                   type="submit"
                   className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
                 >
                   {formMode === 'create' ? 'Add Category' : 'Update Category'}
-                </button>
+                </Button>
                 
                 {formMode === 'edit' && (
-                  <button
-                    type="button"
+                  <Button
+                    type="Button"
                     onClick={resetForm}
                     className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
                   >
                     Cancel
-                  </button>
+                  </Button>
                 )}
               </div>
             </form>

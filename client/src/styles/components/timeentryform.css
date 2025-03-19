@@ -1,0 +1,81 @@
+/* TimeEntryForm component styles */
+.time-entry-form {
+    background-color: white;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+  }
+  
+  .time-entry-form-header {
+    padding: 1rem;
+    border-bottom: 1px solid var(--color-gray-200);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  
+  .time-entry-form-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--color-gray-800);
+  }
+  
+  .time-entry-form-content {
+    padding: 1rem;
+  }
+  
+  /* Compact version */
+  .time-entry-form.compact .form-group {
+    margin-bottom: 1rem;
+  }
+  
+  .time-entry-form.compact .form-label {
+    font-size: 0.75rem;
+    margin-bottom: 0.25rem;
+  }
+  
+  .time-entry-form.compact .form-input,
+  .time-entry-form.compact .form-select {
+    font-size: 0.875rem;
+    padding: 0.5rem 0.625rem;
+  }
+  
+  /* Time fields layout */
+  .time-fields-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+  }
+  
+  .time-field-wrapper {
+    position: relative;
+  }
+  
+  .time-field-label {
+    position: absolute;
+    top: 0.5rem;
+    left: 0.75rem;
+    font-size: 0.75rem;
+    color: var(--color-gray-500);
+    pointer-events: none;
+  }
+  
+  .time-field-input {
+    padding-top: 1.5rem !important;
+  }
+  
+  /* Animation for form transitions */
+  .time-entry-form-container {
+    transition: max-height 0.3s ease-in-out, opacity 0.2s ease-in-out;
+    overflow: hidden;
+  }
+  
+  .time-entry-form-container.collapsed {
+    max-height: 0;
+    opacity: 0;
+  }
+  
+  .time-entry-form-container.expanded {
+    max-height: 800px;
+    opacity: 1;
+  }

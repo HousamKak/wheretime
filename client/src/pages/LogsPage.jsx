@@ -2,6 +2,7 @@ import { useState } from 'react';
 import TimeLogViewer from '../components/TimeLogViewer';
 import { useApp } from '../contexts/AppContext';
 import { Alert } from '../components/common/Alert';
+import '../styles/pages/logs.css';
 
 const LogsPage = () => {
   const { categories } = useApp();

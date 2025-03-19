@@ -1,0 +1,111 @@
+/* Logs page styles */
+.logs-page {
+    margin-bottom: 2rem;
+  }
+  
+  .logs-page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+  }
+  
+  .logs-page-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--color-gray-900);
+  }
+  
+  .logs-page-actions {
+    display: flex;
+    gap: 0.5rem;
+  }
+  
+  .logs-filter-card {
+    background-color: white;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+    border: 1px solid var(--color-gray-200);
+  }
+  
+  .logs-filter-title {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: var(--color-gray-800);
+  }
+  
+  .logs-filter-form {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  @media (min-width: 768px) {
+    .logs-filter-form {
+      grid-template-columns: 1fr 1fr 1fr;
+    }
+  }
+  
+  .logs-list-card {
+    background-color: white;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+    border: 1px solid var(--color-gray-200);
+  }
+  
+  .logs-list-header {
+    padding: 1.25rem;
+    border-bottom: 1px solid var(--color-gray-200);
+    background-color: var(--color-gray-50);
+  }
+  
+  .logs-list-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--color-gray-800);
+  }
+  
+  .logs-list-content {
+    padding: 1.25rem;
+  }
+  
+  .logs-date-group {
+    margin-bottom: 1.5rem;
+  }
+  
+  .logs-date-header {
+    font-size: 1rem;
+    font-weight: 600;
+    padding: 0.75rem 1rem;
+    background-color: var(--color-gray-100);
+    border-radius: var(--radius-md);
+    margin-bottom: 0.75rem;
+  }
+  
+  .logs-empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--color-gray-500);
+  }
+  
+  .logs-empty-icon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    color: var(--color-gray-300);
+  }
+  
+  .logs-empty-message {
+    margin-bottom: 0.5rem;
+    font-size: 1.125rem;
+    color: var(--color-gray-600);
+  }
+  
+  .logs-empty-description {
+    color: var(--color-gray-500);
+    max-width: 28rem;
+    margin: 0 auto;
+  }

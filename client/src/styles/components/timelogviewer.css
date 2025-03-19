@@ -1,0 +1,121 @@
+/* TimeLogViewer component styles */
+.time-log-container {
+    margin-bottom: 2rem;
+  }
+  
+  .time-log-filters {
+    background-color: white;
+    padding: 1rem;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    margin-bottom: 1.5rem;
+  }
+  
+  .time-log-group {
+    margin-bottom: 1.5rem;
+  }
+  
+  .time-log-date-header {
+    font-size: 1rem;
+    font-weight: 600;
+    padding: 0.5rem 1rem;
+    background-color: var(--color-gray-100);
+    border-radius: var(--radius-md);
+    margin-bottom: 0.5rem;
+  }
+  
+  .time-log-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  .time-log-table th {
+    text-align: left;
+    padding: 0.75rem 1rem;
+    font-weight: 500;
+    color: var(--color-gray-600);
+    border-bottom: 1px solid var(--color-gray-200);
+    white-space: nowrap;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+  }
+  
+  .time-log-table td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--color-gray-200);
+    vertical-align: middle;
+  }
+  
+  .time-log-table tr:hover {
+    background-color: var(--color-gray-50);
+  }
+  
+  .time-log-table tr:last-child td {
+    border-bottom: none;
+  }
+  
+  .time-log-category {
+    display: flex;
+    align-items: center;
+  }
+  
+  .time-log-category-color {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 0.5rem;
+  }
+  
+  .time-log-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+  }
+  
+  .time-log-empty {
+    text-align: center;
+    padding: 2rem;
+    color: var(--color-gray-500);
+    font-style: italic;
+  }
+  
+  /* Edit Modal */
+  .time-log-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+  }
+  
+  .time-log-modal {
+    background-color: white;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-xl);
+    width: 100%;
+    max-width: 32rem;
+    margin: 1rem;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .time-log-modal-header {
+    padding: 1.25rem;
+    border-bottom: 1px solid var(--color-gray-200);
+  }
+  
+  .time-log-modal-content {
+    padding: 1.25rem;
+  }
+  
+  .time-log-modal-footer {
+    padding: 1.25rem;
+    border-top: 1px solid var(--color-gray-200);
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    background-color: var(--color-gray-50);
+  }

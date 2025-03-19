@@ -2,6 +2,7 @@ import { useState } from 'react';
 import CategoryManager from '../components/CategoryManager';
 import { useApp } from '../contexts/AppContext';
 import { Alert } from '../components/common/Alert';
+import '../styles/pages/categories.css';
 
 const CategoriesPage = () => {
   const { categories, updateCategories } = useApp();

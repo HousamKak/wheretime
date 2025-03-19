@@ -1,5 +1,5 @@
 import React from 'react';
-
+import '../../styles/components/loader.css';
 export const Loader = ({ size = 'md', className = '' }) => {
   // Size classes
   const sizeClasses = {

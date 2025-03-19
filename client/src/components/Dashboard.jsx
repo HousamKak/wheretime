@@ -1,397 +1,401 @@
-import React, { useState, useEffect } from 'react';
-import { format, startOfMonth, endOfMonth, subDays, parseISO } from 'date-fns';
+import React, { useState, useEffect, useMemo } from 'react';
 import TimeSeriesChart from './TimeSeriesChart';
-import Sidebar from './Sidebar';
-import CategoryLegend from './CategoryLegend';
-import axios from 'axios';
+import LeftSidebar from './LeftSidebar';
+import RightSidebar from './RightSidebar';
+import '../styles/components/dashboard.css';
+import { Button } from './common/Button';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-
-const Dashboard = () => {
-  const [categories, setCategories] = useState([]);
-  const [timeData, setTimeData] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [dateRange, setDateRange] = useState({
-    startDate: format(subDays(new Date(), 30), 'yyyy-MM-dd'),
-    endDate: format(new Date(), 'yyyy-MM-dd')
+const Dashboard = ({ 
+  categories = [],
+  logs = [],
+  stats = [],
+  dateRange = { start: '', end: '' },
+  onDateRangeChange,
+  loading = false
+}) => {
+  console.log("Dashboard render - props received:", { 
+    categoriesCount: categories.length,
+    logsCount: logs.length,
+    statsCount: stats.length,
+    dateRange,
+    loading
   });
-  const [totalTime, setTotalTime] = useState(0);
-  const [categoryVisibility, setCategoryVisibility] = useState({});
-  const [categoryStats, setCategoryStats] = useState([]);
-  const [expandedCategories, setExpandedCategories] = useState({});
-  const [error, setError] = useState(null);
+  
+  // State for controlling sidebar visibility
+  const [leftSidebarOpen, setLeftSidebarOpen] = useState(true);
+  const [rightSidebarOpen, setRightSidebarOpen] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
+  const [dataError, setDataError] = useState(null);
+  
+  // Create a map of child categories by parent ID for quick lookup
+  const childrenByParent = useMemo(() => {
+    const result = {};
+    categories.forEach(cat => {
+      if (cat.parent_id) {
+        if (!result[cat.parent_id]) {
+          result[cat.parent_id] = [];
+        }
+        result[cat.parent_id].push(cat);
+      }
+    });
+    return result;
+  }, [categories]);
+  
+  // Initialize category visibility state with useMemo to handle async loading
+  const initialCategoryVisibility = useMemo(() => {
+    console.log("Initializing category visibility state with:", categories.length, "categories");
+    const result = categories.reduce((acc, category) => {
+      acc[category.id] = true;
+      return acc;
+    }, {});
+    console.log("Initial category visibility state:", result);
+    return result;
+  }, [categories]);
+
+  // Initialize expanded categories state
+  const initialExpandedCategories = useMemo(() => {
+    console.log("Initializing expanded categories state with:", categories.length, "categories");
+  
+    // Initialize expansion state 
+    const result = categories.reduce((acc, category) => {
+      if (!category.parent_id) { // Root category
+        // Auto-expand root categories with children
+        const hasChildren = childrenByParent[category.id] && childrenByParent[category.id].length > 0;
+        acc[category.id] = hasChildren; // Set to true if it has children
+      }
+      return acc;
+    }, {});
+    
+    console.log("Initial expanded categories state:", result);
+    return result;
+  }, [categories, childrenByParent]);
+  
+  // Track category visibility and expanding state
+  const [categoryVisibility, setCategoryVisibility] = useState(initialCategoryVisibility);
+  const [expandedCategories, setExpandedCategories] = useState(initialExpandedCategories);
   const [presetRange, setPresetRange] = useState('30days');
 
-  // Fetch categories on component mount
+  // Update state when categories change
   useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const response = await axios.get(`${API_URL}/categories?flat=true`);
-        setCategories(response.data);
+    console.log("Categories changed, updating visibility and expansion states");
+    console.log("New visibility state:", initialCategoryVisibility);
+    console.log("New expanded state:", initialExpandedCategories);
+    setCategoryVisibility(initialCategoryVisibility);
+    setExpandedCategories(initialExpandedCategories);
+  }, [categories, initialCategoryVisibility, initialExpandedCategories]);
 
-        // Initialize category visibility (all visible by default)
-        const initialVisibility = {};
-        response.data.forEach(category => {
-          initialVisibility[category.id] = true;
-        });
-        setCategoryVisibility(initialVisibility);
-      } catch (err) {
-        console.error('Error fetching categories:', err);
-        setError('Failed to load categories. Please try again later.');
+  // Check for mobile view on initial load and resize
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      
+      // Auto-close sidebars on mobile
+      if (mobile) {
+        setLeftSidebarOpen(false);
+        setRightSidebarOpen(false);
+      } else {
+        // Reopen on desktop if previously closed due to mobile
+        if (!leftSidebarOpen && !rightSidebarOpen) {
+          setLeftSidebarOpen(true);
+          setRightSidebarOpen(true);
+        }
       }
     };
-
-    fetchCategories();
-  }, []);
-
-  // Fetch time log data when date range or categories change
-  useEffect(() => {
-    const fetchTimeData = async () => {
-      if (categories.length === 0) return;
-
-      setIsLoading(true);
-      try {
-        const response = await axios.get(`${API_URL}/logs`, {
-          params: {
-            start_date: dateRange.startDate,
-            end_date: dateRange.endDate
-          }
-        });
-
-        // Ensure we have data before processing
-        if (response.data && response.data.length > 0) {
-          // Process the data to group by date and categories
-          const processedData = processTimeData(response.data);
-          setTimeData(processedData);
-
-          // Calculate total time and stats
-          calculateStats(response.data);
-        } else {
-          console.log("No log data returned from API");
-          setTimeData([]);
-        }
-
-        setIsLoading(false);
-      } catch (err) {
-        console.error('Error fetching time logs:', err);
-        setError('Failed to load time data. Please try again later.');
-        setIsLoading(false);
-      }
-    };
-
-    if (categories.length > 0) {
-      fetchTimeData();
-    }
-  }, [categories, dateRange]);
-
-  // Process time log data for the chart
-  const processTimeData = (logs) => {
-    if (!logs || logs.length === 0) {
-      // Return a minimal dataset instead of empty array to avoid D3 errors
-      const emptyData = [];
-      const start = new Date(dateRange.startDate);
-      const end = new Date(dateRange.endDate);
-
-      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-        const dateStr = format(d, 'yyyy-MM-dd');
-        const entry = { date: dateStr };
-        categories.forEach(category => {
-          entry[`category_${category.id}`] = 0;
-        });
-        emptyData.push(entry);
-      }
-
-      return emptyData;
-    }
-
-    // Create a map to group by date
-    const dateMap = new Map();
-
-    try {
-      // Initialize with all dates in the range, even if no data
-      const start = new Date(dateRange.startDate);
-      const end = new Date(dateRange.endDate);
-
-      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-        const dateStr = format(d, 'yyyy-MM-dd');
-        dateMap.set(dateStr, { date: dateStr });
-
-        // Initialize with 0 for all categories
-        categories.forEach(category => {
-          dateMap.get(dateStr)[`category_${category.id}`] = 0;
-        });
-      }
-
-      // Fill in actual data
-      logs.forEach(log => {
-        const dateEntry = dateMap.get(log.date);
-        if (dateEntry) {
-          dateEntry[`category_${log.category_id}`] = log.total_time;
-        }
-      });
-
-      // Convert map to array and sort by date
-      return Array.from(dateMap.values()).sort((a, b) =>
-        new Date(a.date) - new Date(b.date)
-      );
-    } catch (error) {
-      console.error("Error processing time data:", error);
-      // Return empty array with proper structure to avoid breaking the chart
-      return [];
-    }
-  };
-
-  // Calculate stats for the selected time period
-  const calculateStats = (logs) => {
-    // Group data by category
-    const stats = {};
-    let total = 0;
-
-    // Initialize stats for all categories
-    categories.forEach(category => {
-      stats[category.id] = {
-        id: category.id,
-        name: category.name,
-        color: category.color,
-        parent_id: category.parent_id,
-        totalTime: 0
-      };
-    });
-
-    // Calculate totals
-    logs.forEach(log => {
-      if (stats[log.category_id]) {
-        stats[log.category_id].totalTime += log.total_time;
-        total += log.total_time;
-      }
-    });
-
-    // Convert to array and sort by total time
-    const sortedStats = Object.values(stats)
-      .filter(stat => stat.totalTime > 0)
-      .sort((a, b) => b.totalTime - a.totalTime);
-
-    // Calculate percentages
-    sortedStats.forEach(stat => {
-      stat.percentage = Math.round((stat.totalTime / total) * 100) || 0;
-    });
-
-    setCategoryStats(sortedStats);
-    setTotalTime(total);
-  };
-
-  // Handle date range change
-  const handleDateRangeChange = (range) => {
-    setDateRange(range);
-  };
+    
+    // Set initial value
+    handleResize();
+    
+    // Add event listener
+    window.addEventListener('resize', handleResize);
+    
+    // Cleanup
+    return () => window.removeEventListener('resize', handleResize);
+  }, [leftSidebarOpen, rightSidebarOpen]);
 
   // Handle preset range selection
   const handlePresetChange = (preset) => {
+    console.log("Preset range changed to:", preset);
     const today = new Date();
     let start, end;
 
     switch (preset) {
       case 'today':
-        start = format(today, 'yyyy-MM-dd');
-        end = format(today, 'yyyy-MM-dd');
+        start = formatDateISO(today);
+        end = formatDateISO(today);
         break;
       case '7days':
-        start = format(subDays(today, 6), 'yyyy-MM-dd');
-        end = format(today, 'yyyy-MM-dd');
+        start = formatDateISO(new Date(new Date().setDate(today.getDate() - 6)));
+        end = formatDateISO(new Date());
         break;
       case '30days':
-        start = format(subDays(today, 29), 'yyyy-MM-dd');
-        end = format(today, 'yyyy-MM-dd');
+        start = formatDateISO(new Date(new Date().setDate(today.getDate() - 29)));
+        end = formatDateISO(new Date());
         break;
       case 'thisMonth':
-        start = format(startOfMonth(today), 'yyyy-MM-dd');
-        end = format(today, 'yyyy-MM-dd');
+        start = formatDateISO(new Date(today.getFullYear(), today.getMonth(), 1));
+        end = formatDateISO(new Date());
         break;
       case 'lastMonth':
-        const lastMonth = subDays(startOfMonth(today), 1);
-        start = format(startOfMonth(lastMonth), 'yyyy-MM-dd');
-        end = format(endOfMonth(lastMonth), 'yyyy-MM-dd');
+        const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        start = formatDateISO(lastMonth);
+        end = formatDateISO(new Date(today.getFullYear(), today.getMonth(), 0));
         break;
       default:
         return;
     }
 
+    console.log("New date range:", { start, end });
     setPresetRange(preset);
-    setDateRange({ startDate: start, endDate: end });
+    onDateRangeChange({ start, end });
+  };
+
+  // Format date to ISO format (YYYY-MM-DD)
+  const formatDateISO = (date) => {
+    return date.toISOString().split('T')[0];
   };
 
   // Toggle category visibility
   const toggleCategoryVisibility = (categoryId) => {
-    setCategoryVisibility(prev => ({
-      ...prev,
-      [categoryId]: !prev[categoryId]
-    }));
+    if (!categoryId) {
+      console.error("toggleCategoryVisibility called with invalid categoryId:", categoryId);
+      return;
+    }
+    
+    console.log("Toggling visibility for category:", categoryId);
+    console.log("Current visibility state:", categoryVisibility);
+    
+    setCategoryVisibility(prev => {
+      const newState = {
+        ...prev,
+        [categoryId]: !prev[categoryId]
+      };
+      console.log("New visibility state:", newState);
+      return newState;
+    });
   };
   
-  // Toggle category expansion for the chart
+  // Toggle category expansion
   const toggleCategoryExpansion = (categoryId) => {
-    setExpandedCategories(prev => ({
-      ...prev,
-      [categoryId]: !prev[categoryId]
-    }));
-  };
-
-  // Get data for chart (only visible categories)
-  const getVisibleTimeData = () => {
-    if (!timeData || timeData.length === 0) {
-      return [];
+    if (!categoryId) {
+      console.error("toggleCategoryExpansion called with invalid categoryId:", categoryId);
+      return;
     }
-
-    return timeData.map(day => {
-      const filtered = { date: day.date };
-      Object.keys(day).forEach(key => {
-        if (key.startsWith('category_')) {
-          const categoryId = parseInt(key.split('_')[1]);
-          // Check if this category exists in visibility object
-          if (categoryVisibility.hasOwnProperty(categoryId)) {
-            if (categoryVisibility[categoryId]) {
-              filtered[key] = day[key];
-            }
-          }
-        }
-      });
-      return filtered;
+    
+    console.log("Toggling expansion for category:", categoryId);
+    console.log("Current expansion state:", expandedCategories);
+    
+    setExpandedCategories(prev => {
+      const newState = {
+        ...prev,
+        [categoryId]: !prev[categoryId]
+      };
+      console.log("New expansion state:", newState);
+      return newState;
     });
   };
 
-  // Render time chart
-  const renderTimeChart = () => (
-    <div className="card">
-      <div className="card-header">
-        <h2 className="card-title">Time Spent Trends</h2>
-      </div>
-      <div className="card-content">
-        {isLoading ? (
-          <div className="flex justify-center items-center h-64">
-            <div className="loader"></div>
-          </div>
-        ) : (
-          <TimeSeriesChart
-            data={getVisibleTimeData()}
-            categories={categories}
-            categoryVisibility={categoryVisibility}
-            expandedCategories={expandedCategories}
-          />
-        )}
-      </div>
-    </div>
-  );
+  // Calculate total time from stats
+  const totalTime = stats.reduce((total, stat) => total + (stat.totalTime || 0), 0);
+  console.log("Calculated total time:", totalTime);
 
-  const handleSuccess = () => {
-    // Refetch time data after successful entry
-    const fetchTimeData = async () => {
-      try {
-        const response = await axios.get(`${API_URL}/logs`, {
-          params: {
-            start_date: dateRange.startDate,
-            end_date: dateRange.endDate
-          }
-        });
-
-        const processedData = processTimeData(response.data);
-        setTimeData(processedData);
-
-        // Calculate stats
-        calculateStats(response.data);
-      } catch (err) {
-        console.error('Error fetching time logs:', err);
+  // Process logs data for the chart
+  const processLogsForChart = () => {
+    try {
+      console.log("Processing logs for chart, logs count:", logs?.length || 0);
+      
+      if (!logs || logs.length === 0) {
+        console.log("No logs to process, returning empty array");
+        return [];
       }
-    };
 
-    fetchTimeData();
+      console.log("Categories available for processing:", categories.length);
+
+      // Create a lookup for valid categories
+      const categoryMap = {};
+      categories.forEach(cat => {
+        categoryMap[cat.id] = cat;
+      });
+      console.log("Valid category IDs:", Object.keys(categoryMap));
+
+      // Group logs by date
+      const dateGroups = {};
+      
+      // First pass: Initialize days
+      logs.forEach(log => {
+        if (!log.date) {
+          console.warn("Log missing date:", log);
+          return;
+        }
+        
+        if (!dateGroups[log.date]) {
+          dateGroups[log.date] = {
+            date: log.date
+          };
+          
+          // Initialize all categories to 0
+          categories.forEach(cat => {
+            dateGroups[log.date][`category_${cat.id}`] = 0;
+          });
+        }
+      });
+      
+      console.log("Initialized date groups:", Object.keys(dateGroups).length);
+      
+      // Second pass: Add time values for logs
+      logs.forEach(log => {
+        if (!log.date) return;
+        
+        const categoryId = log.category_id;
+        
+        if (!categoryMap[categoryId]) {
+          // Try to find parent category if this is a subcategory not directly in our list
+          const parentCategory = categories.find(cat => 
+            cat.children && cat.children.some(child => child.id === categoryId)
+          );
+          
+          if (parentCategory) {
+            // Add to parent category's time
+            const parentKey = `category_${parentCategory.id}`;
+            dateGroups[log.date][parentKey] = (dateGroups[log.date][parentKey] || 0) + (log.total_time || 0);
+            console.log(`Mapped subcategory ${categoryId} to parent ${parentCategory.id}`);
+          } else {
+            console.warn(`Cannot find category with ID ${categoryId} - skipping log`);
+          }
+          return;
+        }
+        
+        // Category exists in our map, add the time
+        const categoryKey = `category_${categoryId}`;
+        dateGroups[log.date][categoryKey] = (dateGroups[log.date][categoryKey] || 0) + (log.total_time || 0);
+      });
+
+      // Convert to array and sort by date
+      const result = Object.values(dateGroups).sort((a, b) => new Date(a.date) - new Date(b.date));
+      console.log("Processed chart data, points count:", result.length);
+      
+      return result;
+    } catch (error) {
+      console.error("Error processing chart data:", error);
+      setDataError("Failed to process time data. There may be an issue with your logs or categories.");
+      return [];
+    }
   };
 
-  if (error) {
+  const chartData = processLogsForChart();
+  
+  // Render data error if present
+  const renderDataError = () => {
+    if (!dataError) return null;
+    
     return (
-      <div className="alert alert-error">
-        <div className="alert-content">
-          <div className="alert-title">Error</div>
-          <p>{error}</p>
-        </div>
-        <button
-          className="alert-dismiss"
-          onClick={() => setError(null)}
+      <div className="p-4 bg-red-50 border border-red-200 rounded-md text-red-700 mb-4">
+        <h3 className="font-medium mb-1">Data Processing Error</h3>
+        <p>{dataError}</p>
+        <button 
+          onClick={() => setDataError(null)} 
+          className="mt-2 text-sm bg-red-100 hover:bg-red-200 px-2 py-1 rounded"
         >
-          &times;
+          Dismiss
         </button>
       </div>
     );
-  }
+  };
+
+  console.log("Rendering Dashboard with state:", { 
+    categoryVisibility, 
+    expandedCategories,
+    leftSidebarOpen,
+    rightSidebarOpen
+  });
 
   return (
-    <div>
-      <style jsx>{`
-        .dashboard-root {
-          display: flex;
-          flex-direction: column;
-          gap: 16px;
-          width: 100%;
-        }
-        
-        @media (min-width: 1024px) {
-          .dashboard-root {
-            flex-direction: row;
-          }
-        }
-        
-        .sidebar {
-          width: 100%;
-        }
-        
-        @media (min-width: 1024px) {
-          .sidebar {
-            width: 250px;
-            flex-shrink: 0;
-          }
-        }
-        
-        .main-content {
-          width: 100%;
-        }
-        
-        @media (min-width: 1024px) {
-          .main-content {
-            flex: 1;
-            min-width: 0;
-            margin: 0 16px;
-          }
-        }
-      `}</style>
+    <div className="dashboard-container">
+      {/* Left Sidebar Toggle Button (Visible when sidebar is closed) */}
+      {!leftSidebarOpen && (
+        <Button 
+          className="sidebar-toggle left-toggle"
+          onClick={() => setLeftSidebarOpen(true)}
+          aria-label="Open left sidebar"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
+            <path fillRule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clipRule="evenodd" />
+          </svg>
+        </Button>
+      )}
       
-      <div className="dashboard-root">
-        <div className="sidebar">
-          <Sidebar 
-            dateRange={dateRange}
-            totalTime={totalTime}
-            categoryStats={categoryStats}
-            categories={categories}
-            categoryVisibility={categoryVisibility}
-            onDateRangeChange={handleDateRangeChange}
-            onToggleCategoryVisibility={toggleCategoryVisibility}
-            onPresetChange={handlePresetChange}
-            presetRange={presetRange}
-            handleSuccess={handleSuccess}
-          />
-        </div>
+      {/* Left Sidebar Component */}
+      <LeftSidebar 
+        isOpen={leftSidebarOpen}
+        onClose={() => setLeftSidebarOpen(false)}
+        dateRange={{
+          startDate: dateRange.start,
+          endDate: dateRange.end
+        }}
+        onDateRangeChange={(newRange) => {
+          console.log("Date range changed in LeftSidebar:", newRange);
+          onDateRangeChange({
+            start: newRange.startDate,
+            end: newRange.endDate
+          });
+        }}
+        presetRange={presetRange}
+        onPresetChange={handlePresetChange}
+        totalTime={totalTime}
+        categories={categories}
+      />
+      
+      {/* Main Content Area */}
+      <main className={`main-content ${!leftSidebarOpen && !rightSidebarOpen ? 'full-width' : ''} ${!leftSidebarOpen ? 'left-closed' : ''} ${!rightSidebarOpen ? 'right-closed' : ''}`}>
+        {renderDataError()}
         
-        <div className="main-content">
-          {renderTimeChart()}
+        <div className="chart-card">
+          <h2 className="chart-title">Time Spent Trends</h2>
+          {loading ? (
+            <div className="chart-loading">
+              <div className="spinner"></div>
+              <p>Loading chart data...</p>
+            </div>
+          ) : chartData.length === 0 ? (
+            <div className="chart-empty">
+              <p>No time data available for the selected period</p>
+            </div>
+          ) : (
+            <TimeSeriesChart
+              data={chartData}
+              categories={categories}
+              categoryVisibility={categoryVisibility}
+              expandedCategories={expandedCategories}
+            />
+          )}
         </div>
-        
-        <div className="sidebar">
-          <CategoryLegend 
-            categories={categories}
-            categoryVisibility={categoryVisibility}
-            expandedCategories={expandedCategories}
-            onToggleExpand={toggleCategoryExpansion}
-          />
-        </div>
-      </div>
+      </main>
+      
+      {/* Right Sidebar Toggle Button (Visible when sidebar is closed) */}
+      {!rightSidebarOpen && (
+        <Button 
+          className="sidebar-toggle right-toggle"
+          onClick={() => setRightSidebarOpen(true)}
+          aria-label="Open right sidebar"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
+            <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
+          </svg>
+        </Button>
+      )}
+      
+      {/* Right Sidebar Component - Only render when visibility state is initialized */}
+      {Object.keys(categoryVisibility).length > 0 && (
+        <RightSidebar 
+          isOpen={rightSidebarOpen}
+          onClose={() => setRightSidebarOpen(false)}
+          categories={categories}
+          categoryVisibility={categoryVisibility}
+          expandedCategories={expandedCategories}
+          onToggleExpand={toggleCategoryExpansion}
+          onToggleVisibility={toggleCategoryVisibility}
+        />
+      )}
     </div>
   );
 };

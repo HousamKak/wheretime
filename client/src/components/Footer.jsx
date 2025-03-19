@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import '../styles/layouts/footer.css';
 
 const Footer = () => {
   // Get current year for copyright

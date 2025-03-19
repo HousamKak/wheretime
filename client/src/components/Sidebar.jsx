@@ -1,6 +1,7 @@
 import React from 'react';
 import TimeEntryForm from './TimeEntryForm';
 import { format, parseISO } from 'date-fns';
+import '../styles/components/sidebar.css';
 
 const Sidebar = ({ 
   dateRange,

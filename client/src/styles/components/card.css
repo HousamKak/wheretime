@@ -1,0 +1,48 @@
+/* Card component styles */
+.card {
+    background-color: white;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+    transition: transform var(--transition-normal),
+      box-shadow var(--transition-normal);
+    border: 1px solid var(--color-gray-100);
+  }
+  
+  .card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+  }
+  
+  .card-header {
+    padding: 1.25rem;
+    border-bottom: 1px solid var(--color-gray-100);
+    background-color: var(--color-gray-50);
+  }
+  
+  .card-content {
+    padding: 1.25rem;
+  }
+  
+  .card-footer {
+    padding: 1.25rem;
+    border-top: 1px solid var(--color-gray-100);
+    background-color: var(--color-gray-50);
+  }
+  
+  /* Card title with accent */
+  .card-title {
+    position: relative;
+    padding-left: 1rem;
+  }
+  
+  .card-title::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.25rem;
+    bottom: 0.25rem;
+    width: 4px;
+    background-color: var(--color-primary);
+    border-radius: var(--radius-full);
+  }
