@@ -43,15 +43,12 @@ export const Modal = ({
   
   // Size classes
   const sizeClasses = {
-    sm: 'max-w-sm',
-    md: 'max-w-md',
-    lg: 'max-w-lg',
-    xl: 'max-w-xl modal-xl', // Added custom class for xl
-    '2xl': 'max-w-2xl',
-    '3xl': 'max-w-3xl',
-    '4xl': 'max-w-4xl',
-    '5xl': 'max-w-5xl',
-    full: 'max-w-full',
+    sm: 'modal-sm',
+    md: 'modal-md',
+    lg: 'modal-lg',
+    xl: 'modal-xl',
+    '2xl': 'modal-2xl',
+    full: 'modal-full',
   };
   
   // Get the appropriate size class
@@ -61,34 +58,25 @@ export const Modal = ({
   if (!isOpen) return null;
   
   return (
-    <div 
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto modal-overlay"
-      onClick={handleOutsideClick}
-      style={{ 
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        backdropFilter: 'blur(2px)' 
-      }}
-    >
-      {/* Modal */}
+    <div className="modal-overlay" onClick={handleOutsideClick}>
       <div 
         ref={modalRef}
-        className={`relative bg-white rounded-lg shadow-xl w-full ${sizeClass} z-10 transition-all transform modal-container`}
-        style={{ maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}
+        className={`modal ${sizeClass}`}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 modal-header">
-          <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+        <div className="modal-header">
+          <h3 className="modal-title">{title}</h3>
           <button
             type="button"
-            className="text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 rounded-full p-1"
+            className="modal-close-btn"
             onClick={onClose}
+            aria-label="Close"
           >
-            <span className="sr-only">Close</span>
             <svg 
-              className="h-5 w-5" 
-              xmlns="http://www.w3.org/2000/svg" 
+              width="20" 
+              height="20" 
               viewBox="0 0 20 20" 
               fill="currentColor"
+              xmlns="http://www.w3.org/2000/svg"
             >
               <path 
                 fillRule="evenodd" 
@@ -99,8 +87,7 @@ export const Modal = ({
           </button>
         </div>
         
-        {/* Content */}
-        <div className="px-6 py-4 overflow-auto flex-1 modal-content">
+        <div className="modal-body">
           {children}
         </div>
       </div>

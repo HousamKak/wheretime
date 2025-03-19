@@ -1,4 +1,4 @@
-/* Category Charts component styles - with scoped selectors */
+/* Category Charts component styles - Improved version */
 .cc-category-charts-container {
     margin-top: 2rem;
     background-color: white;
@@ -8,11 +8,18 @@
     border: 1px solid var(--color-gray-200);
   }
   
+  .cc-category-charts-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.25rem;
+    border-bottom: 1px solid var(--color-gray-200);
+    background-color: var(--color-gray-50);
+  }
+  
   .cc-category-charts-title {
     font-size: 1.25rem;
     font-weight: 600;
-    padding: 1.25rem;
-    border-bottom: 1px solid var(--color-gray-200);
     margin: 0;
     position: relative;
     padding-left: 2rem;
@@ -22,11 +29,42 @@
     content: '';
     position: absolute;
     left: 1.25rem;
-    top: 1.5rem;
-    bottom: 1.5rem;
+    top: 0.5rem;
+    bottom: 0.5rem;
     width: 0.25rem;
     background-color: var(--color-primary);
     border-radius: var(--radius-full);
+  }
+  
+  .cc-category-charts-scroll-controls {
+    display: flex;
+    gap: 0.5rem;
+  }
+  
+  .cc-scroll-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    background-color: white;
+    border: 1px solid var(--color-gray-200);
+    color: var(--color-gray-600);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  
+  .cc-scroll-button:hover {
+    background-color: var(--color-gray-100);
+    color: var(--color-gray-800);
+    transform: translateY(-1px);
+  }
+  
+  .cc-scroll-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
   }
   
   .cc-category-charts-scrollable {
@@ -57,10 +95,10 @@
     background: var(--color-gray-400);
   }
   
-  /* Mini Chart Cards */
+  /* Mini Chart Cards - INCREASED SIZE */
   .cc-category-mini-chart {
-    flex: 0 0 300px;
-    height: 220px;
+    flex: 0 0 400px; /* Increased from 300px */
+    height: 300px; /* Increased from 220px */
     border-radius: var(--radius-lg);
     border: 1px solid var(--color-gray-200);
     box-shadow: var(--shadow-sm);
@@ -123,12 +161,14 @@
     width: 100%;
     height: 100%;
     color: var(--color-gray-400);
-    font-size: 0.75rem;
+    font-size: 0.875rem;
   }
   
   .cc-category-mini-content .cc-empty-chart svg {
     margin-bottom: 0.5rem;
     opacity: 0.6;
+    width: 2.5rem;
+    height: 2.5rem;
   }
   
   .cc-category-mini-footer {
@@ -144,20 +184,22 @@
     display: flex;
     align-items: center;
     gap: 0.25rem;
-    font-size: 0.75rem;
+    font-size: 0.875rem;
+    padding: 0.5rem 0.75rem;
   }
   
   .cc-category-mini-children {
-    font-size: 0.75rem;
+    font-size: 0.875rem;
     color: var(--color-gray-500);
   }
   
-  /* Modal Expanded Chart */
+  /* Modal content for category charts */
   .cc-modal-chart-container {
+    flex: 1;
     display: flex;
     flex-direction: column;
-    height: 80vh;
-    max-height: 800px;
+    padding: 1rem;
+    overflow: hidden;
   }
   
   .cc-subcategory-controls {
@@ -204,31 +246,14 @@
   
   .cc-modal-chart {
     flex: 1;
-    min-height: 400px;
-    width: 100%;
-  }
-  
-  /* Override modal styles for full screen experience */
-  .modal-xl {
-    max-width: 90% !important;
+    position: relative;
+    overflow: hidden;
   }
   
   /* Responsive adjustments */
   @media (max-width: 768px) {
     .cc-category-mini-chart {
-      flex: 0 0 250px;
-      height: 200px;
-    }
-    
-    .cc-subcategory-controls {
-      padding: 0.5rem;
-    }
-    
-    .cc-modal-chart-container {
-      height: 70vh;
-    }
-    
-    .cc-modal-chart {
-      height: 400px;
+      flex: 0 0 320px;
+      height: 260px;
     }
   }

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import { Modal } from './common/Modal';
 import TimeSeriesChart from './TimeSeriesChart';
 import { Button } from './common/Button';
@@ -13,6 +13,8 @@ const CategoryCharts = ({
   // State for modal control
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  // Ref for scrollable container
+  const scrollContainerRef = useRef(null);
   
   // Filter to only show root categories
   const rootCategories = useMemo(() => {
@@ -39,6 +41,20 @@ const CategoryCharts = ({
   const handleToggleSubcategory = (categoryId) => {
     if (onToggleVisibility) {
       onToggleVisibility(categoryId);
+    }
+  };
+  
+  // Handle scroll buttons
+  const handleScroll = (direction) => {
+    if (scrollContainerRef.current) {
+      const scrollAmount = 400; // Match this to the width of the cards
+      const container = scrollContainerRef.current;
+      
+      if (direction === 'left') {
+        container.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+      } else {
+        container.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+      }
     }
   };
   
@@ -91,6 +107,7 @@ const CategoryCharts = ({
               categoryVisibility={filteredVisibility}
               expandedCategories={{ [category.id]: true }}
               isMinified={true}
+              chartId={`mini-chart-${category.id}`}
             />
           ) : (
             <div className="cc-empty-chart">
@@ -160,7 +177,6 @@ const CategoryCharts = ({
         onClose={handleCloseModal}
         title={`${selectedCategory.name} - ${formatTime(categoryTotal)}`}
         size="xl"
-        closeOnOutsideClick={true}
       >
         <div className="cc-modal-chart-container">
           {childCategories.length > 0 && (
@@ -192,6 +208,7 @@ const CategoryCharts = ({
               categories={[selectedCategory, ...childCategories]}
               categoryVisibility={modalVisibility}
               expandedCategories={{ [selectedCategory.id]: true }}
+              chartId={`modal-chart-${selectedCategory.id}`}
             />
           </div>
         </div>
@@ -214,9 +231,32 @@ const CategoryCharts = ({
   
   return (
     <div className="cc-category-charts-container">
-      <h2 className="cc-category-charts-title">Category Breakdown</h2>
+      <div className="cc-category-charts-header">
+        <h2 className="cc-category-charts-title">Category Breakdown</h2>
+        
+        <div className="cc-category-charts-scroll-controls">
+          <button 
+            className="cc-scroll-button" 
+            onClick={() => handleScroll('left')}
+            aria-label="Scroll left"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+          </button>
+          <button 
+            className="cc-scroll-button" 
+            onClick={() => handleScroll('right')}
+            aria-label="Scroll right"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+          </button>
+        </div>
+      </div>
       
-      <div className="cc-category-charts-scrollable">
+      <div className="cc-category-charts-scrollable" ref={scrollContainerRef}>
         {rootCategories.map(renderCategoryMiniChart)}
       </div>
       
