@@ -1,15 +1,21 @@
 @echo off
 cd /d "%~dp0"
 
-:: Start the backend server
+:: Start Backend Server
 cd server
+echo Installing backend dependencies...
+npm install
+echo Starting backend server...
 start cmd /k "npm run dev"
 
-:: Go back to the root directory
+:: Go back to root directory
 cd ..
 
-:: Start the frontend server
+:: Start Frontend Server
 cd client
+echo Installing frontend dependencies...
+npm install
+echo Starting frontend server...
 start cmd /k "npm run dev"
 
 echo Both backend and frontend servers are running.
