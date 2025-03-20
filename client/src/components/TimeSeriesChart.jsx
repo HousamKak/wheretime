@@ -115,94 +115,6 @@ const TimeSeriesChart = ({ data, categories, categoryVisibility, expandedCategor
     };
   }, [chartInstanceId, dimensions, isMinified]);
 
-  // Helper function to prepare stacked data with expanded categories
-  const prepareStackedData = (formattedData) => {
-    // Get expanded category IDs for easy lookup
-    const expandedCategoryIds = Object.entries(expandedCategories)
-      .filter(([_, isExpanded]) => isExpanded)
-      .map(([id]) => parseInt(id));
-
-    try {
-      return formattedData.map(dayData => {
-        const day = { date: dayData.date };
-        let yBase = 0;
-
-        // Process root categories
-        categoryHierarchy.rootCategories.forEach(rootCategory => {
-          if (categoryVisibility[rootCategory.id] !== false) {
-            let categoryValue = dayData[`category_${rootCategory.id}`] || 0;
-
-            // Check if this category should be expanded
-            const shouldExpand = expandedCategoryIds.includes(parseInt(rootCategory.id));
-
-            if (shouldExpand && rootCategory.children && rootCategory.children.length > 0) {
-              // Subtract visible children values from parent
-              let childrenTotal = 0;
-              rootCategory.children.forEach(child => {
-                if (categoryVisibility[child.id] !== false) {
-                  const childValue = dayData[`category_${child.id}`] || 0;
-                  childrenTotal += childValue;
-                }
-              });
-
-              // Calculate parent's own value (subtract children values)
-              const parentOwnValue = Math.max(0, categoryValue - childrenTotal);
-
-              // Add parent value first
-              day[`parent_${rootCategory.id}`] = {
-                value: parentOwnValue,
-                y0: yBase,
-                y1: yBase + parentOwnValue,
-                category: rootCategory,
-                isParent: true
-              };
-
-              yBase += parentOwnValue;
-
-              // Then add each visible child
-              rootCategory.children.forEach(child => {
-                if (categoryVisibility[child.id] !== false) {
-                  const childValue = dayData[`category_${child.id}`] || 0;
-
-                  if (childValue > 0) {
-                    day[`child_${child.id}`] = {
-                      value: childValue,
-                      y0: yBase,
-                      y1: yBase + childValue,
-                      category: child,
-                      isChild: true
-                    };
-
-                    yBase += childValue;
-                  }
-                }
-              });
-            } else {
-              // Category not expanded, just add the total value
-              if (categoryValue > 0) {
-                day[`category_${rootCategory.id}`] = {
-                  value: categoryValue,
-                  y0: yBase,
-                  y1: yBase + categoryValue,
-                  category: rootCategory
-                };
-
-                yBase += categoryValue;
-              }
-            }
-          }
-        });
-
-        day.total = yBase;
-        return day;
-      });
-    } catch (error) {
-      console.error("Error preparing stacked data:", error);
-      setChartError("Error preparing chart data");
-      return [];
-    }
-  };
-
   // Create chart whenever data, dimensions, or visibility changes
   useEffect(() => {
     // Only create chart if dimensions are valid
@@ -273,12 +185,66 @@ const TimeSeriesChart = ({ data, categories, categoryVisibility, expandedCategor
         .range([0, innerWidth])
         .nice();
 
-      // Prepare stacked data
-      const stackedData = prepareStackedData(formattedData);
+      // Prepare category series
+      const processedCategories = [];
+      let maxY = 0;
 
-      // Find max y value for scale
-      const maxY = d3.max(stackedData, d => d.total) || 0;
+      // Process visible categories for the chart
+      visibleCategories.forEach(category => {
+        const isParent = categoryHierarchy.rootCategories.some(root => root.id === category.id);
+        const isExpanded = isParent && expandedCategories[category.id];
+        
+        // Skip rendering children if their parent is visible but not expanded
+        if (category.parent_id) {
+          const parent = categoryHierarchy.categoryMap[category.parent_id];
+          if (parent && categoryVisibility[parent.id] !== false && !expandedCategories[parent.id]) {
+            return;
+          }
+        }
 
+        // Prepare the time series data for this category
+        const categoryKey = `category_${category.id}`;
+        const seriesData = formattedData.map(day => {
+          let value = day[categoryKey] || 0;
+          
+          // For parent categories with visible children, calculate the sum differently
+          if (isParent && isExpanded) {
+            // If it's an expanded parent, use the total of all its children
+            const childrenIds = categoryHierarchy.categoryMap[category.id].children.map(child => child.id);
+            
+            // If children are visible, sum them up; otherwise use the parent's value
+            const visibleChildren = childrenIds.filter(id => categoryVisibility[id] !== false);
+            
+            if (visibleChildren.length > 0) {
+              value = visibleChildren.reduce((sum, childId) => {
+                return sum + (day[`category_${childId}`] || 0);
+              }, 0);
+            }
+          }
+          
+          return {
+            date: day.date,
+            value: value
+          };
+        });
+
+        // Update max Y value
+        const categoryMax = d3.max(seriesData, d => d.value);
+        if (categoryMax > maxY) {
+          maxY = categoryMax;
+        }
+
+        processedCategories.push({
+          id: category.id,
+          name: category.name,
+          color: category.color,
+          data: seriesData,
+          isParent,
+          isExpanded
+        });
+      });
+
+      // Create Y scale based on max value
       const yScale = d3.scaleLinear()
         .domain([0, maxY > 0 ? maxY * 1.1 : 10])
         .range([innerHeight, 0])
@@ -372,48 +338,33 @@ const TimeSeriesChart = ({ data, categories, categoryVisibility, expandedCategor
           .text('Date');
       }
 
-      // Create areas for visible categories with proper stacking
-      const stackKeys = Object.keys(stackedData[0] || {}).filter(key =>
-        key !== 'date' && key !== 'total'
-      );
+      // Create line and area generators
+      const lineGenerator = d3.line()
+        .x(d => xScale(d.date))
+        .y(d => yScale(d.value))
+        .curve(d3.curveMonotoneX);
 
-      // Create areas for each key
-      stackKeys.forEach(key => {
-        // Get a sample data point to extract category info
-        const samplePoint = stackedData[0][key];
-        if (!samplePoint || !samplePoint.category) {
-          return;
-        }
+      const areaGenerator = d3.area()
+        .x(d => xScale(d.date))
+        .y0(() => yScale(0))
+        .y1(d => yScale(d.value))
+        .curve(d3.curveMonotoneX);
 
-        const category = samplePoint.category;
-        const isChild = key.startsWith('child_');
-        const isParent = key.startsWith('parent_');
-
-        // Area generator
-        const areaGenerator = d3.area()
-          .x(d => xScale(d.date))
-          .y0(d => yScale(d[key]?.y0 || 0))
-          .y1(d => yScale(d[key]?.y1 || 0))
-          .curve(d3.curveMonotoneX);
-
+      // Add series for each processed category
+      processedCategories.forEach((category, index) => {
         // Add area
         svg.append('path')
-          .datum(stackedData)
+          .datum(category.data)
           .attr('fill', category.color || '#ccc')
-          .attr('fill-opacity', isChild ? 0.8 : (isParent ? 0.5 : 0.6)) // Different opacities for different levels
+          .attr('fill-opacity', 0.3) // Use consistent opacity for areas
           .attr('d', areaGenerator);
 
-        // Add line on top
-        const lineGenerator = d3.line()
-          .x(d => xScale(d.date))
-          .y(d => yScale(d[key]?.y1 || 0))
-          .curve(d3.curveMonotoneX);
-
+        // Add line
         svg.append('path')
-          .datum(stackedData)
+          .datum(category.data)
           .attr('fill', 'none')
           .attr('stroke', category.color || '#ccc')
-          .attr('stroke-width', isChild ? 2 : 1) // Make child lines thicker
+          .attr('stroke-width', 2)
           .attr('d', lineGenerator);
       });
 
@@ -449,13 +400,13 @@ const TimeSeriesChart = ({ data, categories, categoryVisibility, expandedCategor
               const [mouseX] = d3.pointer(event, this);
               const x0 = xScale.invert(mouseX);
 
-              // Find the closest date
+              // Find the closest date in the data
               const bisectDate = d3.bisector(d => d.date).left;
-              const index = bisectDate(stackedData, x0, 1);
-              if (index >= stackedData.length) return;
+              const index = bisectDate(formattedData, x0, 1);
+              if (index >= formattedData.length) return;
 
-              const d0 = stackedData[Math.max(0, index - 1)];
-              const d1 = stackedData[index];
+              const d0 = formattedData[Math.max(0, index - 1)];
+              const d1 = formattedData[index];
               if (!d0 || !d1) return;
 
               const d = x0 - d0.date > d1.date - x0 ? d1 : d0;
@@ -471,66 +422,32 @@ const TimeSeriesChart = ({ data, categories, categoryVisibility, expandedCategor
                 <div>
               `;
 
-              // Process categories in the right order for the tooltip
-              categoryHierarchy.rootCategories.forEach(rootCategory => {
-                if (categoryVisibility[rootCategory.id] !== false) {
-                  const isExpanded = expandedCategories[rootCategory.id] === true;
-
-                  if (isExpanded) {
-                    // Add parent category (its own value)
-                    const parentKey = `parent_${rootCategory.id}`;
-                    const parentData = d[parentKey];
-
-                    if (parentData && parentData.value > 0) {
-                      tooltipContent += `
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 4px; align-items: center;">
-                          <div style="display: flex; align-items: center;">
-                            <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background-color: ${rootCategory.color}; margin-right: 6px;"></span>
-                            <span>${rootCategory.name} (parent):</span>
-                          </div>
-                          <span style="font-weight: 500; margin-left: 12px;">${formatTime(parentData.value)}</span>
-                        </div>
-                      `;
-                    }
-
-                    // Add visible children
-                    rootCategory.children.forEach(child => {
-                      if (categoryVisibility[child.id] !== false) {
-                        const childKey = `child_${child.id}`;
-                        const childData = d[childKey];
-
-                        if (childData && childData.value > 0) {
-                          tooltipContent += `
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 4px; align-items: center; padding-left: 16px;">
-                              <div style="display: flex; align-items: center;">
-                                <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: ${child.color}; margin-right: 6px;"></span>
-                                <span style="font-size: 0.9em;">${child.name}:</span>
-                              </div>
-                              <span style="font-weight: 500; margin-left: 12px; font-size: 0.9em;">${formatTime(childData.value)}</span>
-                            </div>
-                          `;
-                        }
-                      }
-                    });
-                  } else {
-                    // Add the whole category
-                    const categoryKey = `category_${rootCategory.id}`;
-                    const categoryData = d[categoryKey];
-
-                    if (categoryData && categoryData.value > 0) {
-                      tooltipContent += `
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 4px; align-items: center;">
-                          <div style="display: flex; align-items: center;">
-                            <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background-color: ${rootCategory.color}; margin-right: 6px;"></span>
-                            <span>${rootCategory.name}:</span>
-                          </div>
-                          <span style="font-weight: 500; margin-left: 12px;">${formatTime(categoryData.value)}</span>
-                        </div>
-                      `;
-                    }
-                  }
+              // Show values for each visible category
+              processedCategories.forEach(category => {
+                const dateValue = category.data.find(item => 
+                  item.date.getTime() === d.date.getTime()
+                );
+                
+                if (dateValue && dateValue.value > 0) {
+                  tooltipContent += `
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 4px; align-items: center;">
+                      <div style="display: flex; align-items: center;">
+                        <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background-color: ${category.color}; margin-right: 6px;"></span>
+                        <span>${category.name}:</span>
+                      </div>
+                      <span style="font-weight: 500; margin-left: 12px;">${formatTime(dateValue.value)}</span>
+                    </div>
+                  `;
                 }
               });
+
+              // Calculate total time for this date
+              const totalValue = processedCategories.reduce((total, category) => {
+                const dateValue = category.data.find(item => 
+                  item.date.getTime() === d.date.getTime()
+                );
+                return total + (dateValue ? dateValue.value : 0);
+              }, 0);
 
               // Add total
               tooltipContent += `
@@ -538,7 +455,7 @@ const TimeSeriesChart = ({ data, categories, categoryVisibility, expandedCategor
                 <div style="margin-top: 8px; padding-top: 4px; border-top: 1px solid #E5E7EB;">
                   <div style="display: flex; justify-content: space-between; font-weight: 600;">
                     <span>Total:</span>
-                    <span>${formatTime(d.total || 0)}</span>
+                    <span>${formatTime(totalValue || 0)}</span>
                   </div>
                 </div>
               `;
