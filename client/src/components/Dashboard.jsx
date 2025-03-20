@@ -47,7 +47,7 @@ const Dashboard = ({
   const initialCategoryVisibility = useMemo(() => {
     console.log("Initializing category visibility state with:", categories.length, "categories");
     const result = categories.reduce((acc, category) => {
-      acc[category.id] = true;
+      acc[category.id] = false;
       return acc;
     }, {});
     console.log("Initial category visibility state:", result);
