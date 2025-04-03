@@ -13,7 +13,10 @@ const CategoryCharts = ({
     // State for modal control
     const [selectedCategory, setSelectedCategory] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
-
+    
+    // State for modal-specific visibility settings
+    const [modalVisibility, setModalVisibility] = useState({});
+    
     // Ref for scrollable container
     const scrollContainerRef = useRef(null);
 
@@ -29,6 +32,22 @@ const CategoryCharts = ({
 
     // Handle expand chart to modal
     const handleExpandChart = (category) => {
+        // Initialize modal visibility with all subcategories visible
+        const initialModalVisibility = {...categoryVisibility};
+        
+        // Get all subcategories
+        const subcategories = getChildCategories(category.id);
+        
+        // Make sure the category and all its subcategories are visible by default
+        initialModalVisibility[category.id] = true;
+        subcategories.forEach(sub => {
+            initialModalVisibility[sub.id] = true;
+        });
+        
+        // Set the modal-specific visibility state
+        setModalVisibility(initialModalVisibility);
+        
+        // Open the modal with the selected category
         setSelectedCategory(category);
         setIsModalOpen(true);
     };
@@ -40,11 +59,12 @@ const CategoryCharts = ({
         setTimeout(() => setSelectedCategory(null), 300);
     };
 
-    // Toggle subcategory visibility in the expanded modal view
-    const handleToggleSubcategory = (categoryId) => {
-        if (onToggleVisibility) {
-            onToggleVisibility(categoryId);
-        }
+    // Toggle subcategory visibility in the expanded modal view only
+    const handleToggleModalSubcategory = (categoryId) => {
+        setModalVisibility(prev => ({
+            ...prev,
+            [categoryId]: !prev[categoryId]
+        }));
     };
 
     // Handle scroll buttons
@@ -66,18 +86,13 @@ const CategoryCharts = ({
         // Get children for this category
         const childCategories = getChildCategories(category.id);
 
-        // Create a filtered visibility map for just this category and its children
-        const filteredVisibility = {};
+        // For mini charts, force all categories to be visible
+        const forcedVisibility = {};
 
-        // Set all categories to invisible by default
-        categories.forEach(cat => {
-            filteredVisibility[cat.id] = false;
-        });
-
-        // Make only this category and its visible children visible
-        filteredVisibility[category.id] = true;
+        // Set the main category and all children to visible
+        forcedVisibility[category.id] = true;
         childCategories.forEach(child => {
-            filteredVisibility[child.id] = categoryVisibility[child.id] !== false;
+            forcedVisibility[child.id] = true;
         });
 
         // Calculate total time for this category
@@ -100,12 +115,6 @@ const CategoryCharts = ({
             return sum + dayValue;
         }, 0);
 
-        // For debugging
-        if (totalTime > 0) {
-            console.log(`Category ${category.name} (${category.id}) total time: ${totalTime} minutes`);
-        } else {
-            console.log(`Category ${category.name} (${category.id}) has no time recorded`);
-        }
         // Format time for display
         const formattedTime = formatTime(totalTime);
 
@@ -126,11 +135,11 @@ const CategoryCharts = ({
                 </div>
 
                 <div className="cc-category-mini-content">
-                    {/* Always render the chart regardless of totalTime */}
+                    {/* Always render the chart with forced visibility */}
                     <TimeSeriesChart
                         data={data}
                         categories={[category, ...childCategories]}
-                        categoryVisibility={filteredVisibility}
+                        categoryVisibility={forcedVisibility}
                         expandedCategories={{ [category.id]: true }}
                         isMinified={true}
                         chartId={miniChartId}
@@ -170,12 +179,6 @@ const CategoryCharts = ({
         // Get children of selected category
         const childCategories = getChildCategories(selectedCategory.id);
 
-        // Create a filtered visibility map for the expanded view
-        const modalVisibility = { ...categoryVisibility };
-
-        // Make the selected category visible
-        modalVisibility[selectedCategory.id] = true;
-
         // Calculate total time for this category and its children
         const categoryTotal = data.reduce((sum, day) => {
             const key = `category_${selectedCategory.id}`;
@@ -201,8 +204,8 @@ const CategoryCharts = ({
                                     <input
                                         type="checkbox"
                                         id={`subcategory-${child.id}`}
-                                        checked={categoryVisibility[child.id] !== false}
-                                        onChange={() => handleToggleSubcategory(child.id)}
+                                        checked={modalVisibility[child.id] !== false}
+                                        onChange={() => handleToggleModalSubcategory(child.id)}
                                     />
                                     <label htmlFor={`subcategory-${child.id}`}>
                                         <span

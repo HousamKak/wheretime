@@ -8,12 +8,13 @@ const CategoryLegend = ({
   onToggleExpand,
   onToggleVisibility
 }) => {
+  // State to track which category is currently expanded (only one at a time)
+  const [activeCategory, setActiveCategory] = useState(null);
+  
   // Organize categories into a hierarchy using useMemo for better performance
-  const { rootCategories, allCategories } = useMemo(() => {
-    console.log("Building category hierarchy in CategoryLegend");
+  const { rootCategories } = useMemo(() => {
     const rootCats = [];
     const categoryMap = {};
-    let allCats = [];
     
     // Create objects for all categories
     categories.forEach(cat => {
@@ -21,7 +22,6 @@ const CategoryLegend = ({
         ...cat, 
         children: [] 
       };
-      allCats.push(cat);
     });
     
     // Organize into hierarchy
@@ -35,32 +35,29 @@ const CategoryLegend = ({
       }
     });
     
-    console.log(`CategoryLegend: Found ${rootCats.length} root categories and ${allCats.length} total categories`);
-    return { rootCategories: rootCats, allCategories: allCats, categoryMap };
+    return { rootCategories: rootCats, categoryMap };
   }, [categories]);
   
-  // Handle visibility toggle
+  // FIX: Handle visibility toggle with correct logic
+  // When checkbox is checked, the category should be visible
   const handleVisibilityToggle = (categoryId) => {
-    console.log(`CategoryLegend: Toggling visibility for category ${categoryId}`);
     if (onToggleVisibility) {
       onToggleVisibility(categoryId);
     }
   };
   
-  // Handle expand toggle
+  // Handle expand toggle - only allow one category expanded at a time
   const handleExpandToggle = (categoryId, event) => {
     event.stopPropagation(); // Prevent triggering parent click
-    console.log(`CategoryLegend: Toggling expansion for category ${categoryId}`);
-    console.log(`Current expansion state:`, expandedCategories);
+    
+    // Toggle active category
+    setActiveCategory(activeCategory === categoryId ? null : categoryId);
+    
+    // Call parent handler if provided
     if (onToggleExpand) {
       onToggleExpand(categoryId);
     }
   };
-  
-  // Debug info 
-  useEffect(() => {
-    console.log("CategoryLegend rendering with expandedCategories:", expandedCategories);
-  }, [expandedCategories]);
   
   if (!rootCategories || rootCategories.length === 0) {
     return <div className="category-legend-empty">No categories available</div>;
@@ -68,51 +65,42 @@ const CategoryLegend = ({
   
   return (
     <div className="category-legend">
-      <h3 className="sidebar-heading">Chart Categories</h3>
-      
-      {/* Debug info (remove in production) */}
-      <div className="text-xs text-gray-500 mb-2">
-        {Object.entries(expandedCategories).filter(([_, isExpanded]) => isExpanded).length} 
-        categories expanded
-      </div>
+      {/* Removed the heading - let the parent component handle it */}
       
       <div className="category-list">
         {rootCategories.map(category => {
+          // FIX: Correct the visibility logic - true means visible
           const isVisible = categoryVisibility[category.id] !== false;
-          const isExpanded = expandedCategories[category.id] === true;
+          const isExpanded = activeCategory === category.id;
           const hasChildren = category.children && category.children.length > 0;
           
           return (
             <div key={category.id} className="category-item">
               <div 
-                className={`category-header ${isExpanded ? 'bg-blue-50 border-blue-200' : ''}`}
-                onClick={() => handleVisibilityToggle(category.id)}
+                className={`category-header ${isExpanded ? 'active' : ''}`}
               >
-                {/* Visibility checkbox */}
-                <div className="category-visibility" onClick={(e) => e.stopPropagation()}>
-                  <input
-                    type="checkbox"
-                    id={`visibility-${category.id}`}
-                    checked={isVisible}
-                    onChange={() => handleVisibilityToggle(category.id)}
-                    className="category-checkbox"
-                  />
-                  <label 
-                    htmlFor={`visibility-${category.id}`}
-                    className="category-color-indicator"
-                    style={{ backgroundColor: category.color || '#6B7280', opacity: isVisible ? 1 : 0.4 }}
-                  ></label>
+                {/* IMPROVED: Toggle button with better visual design */}
+                <div className="toggle-container" onClick={() => handleVisibilityToggle(category.id)}>
+                  <div className={`toggle-switch ${isVisible ? 'on' : 'off'}`}>
+                    <div className="toggle-slider"></div>
+                  </div>
+                  
+                  {/* Category color and name */}
+                  <div className="category-label">
+                    <span 
+                      className="category-color-dot"
+                      style={{ backgroundColor: category.color || '#6B7280' }}
+                    ></span>
+                    <span className="category-name">{category.name}</span>
+                  </div>
                 </div>
-                
-                {/* Category name */}
-                <div className="category-name">{category.name}</div>
                 
                 {/* Expand/collapse button (only for categories with children) */}
                 {hasChildren && (
                   <button
                     type="button"
                     onClick={(e) => handleExpandToggle(category.id, e)}
-                    className={`category-expand-btn ${isExpanded ? 'expanded bg-blue-100' : ''}`}
+                    className={`category-expand-btn ${isExpanded ? 'expanded' : ''}`}
                     aria-label={isExpanded ? 'Collapse category' : 'Expand category'}
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
@@ -120,46 +108,24 @@ const CategoryLegend = ({
                     </svg>
                   </button>
                 )}
-                
-                {/* Show a badge if it has children */}
-                {hasChildren && !isExpanded && (
-                  <span className="ml-1 text-xs bg-gray-100 text-gray-600 px-1 rounded">
-                    {category.children.length}
-                  </span>
-                )}
               </div>
               
-              {/* Render children if expanded */}
+              {/* Render children if expanded - in a horizontal layout */}
               {isExpanded && hasChildren && (
-                <div className="subcategory-list">
+                <div className="subcategory-container">
                   {category.children.map(child => {
+                    // FIX: Correct the visibility logic for subcategories
                     const isChildVisible = categoryVisibility[child.id] !== false;
                     
                     return (
-                      <div key={child.id} className="subcategory-item">
-                        <div 
-                          className="subcategory-header"
-                          onClick={() => handleVisibilityToggle(child.id)}
-                        >
-                          <div className="category-visibility" onClick={(e) => e.stopPropagation()}>
-                            <input
-                              type="checkbox"
-                              id={`visibility-${child.id}`}
-                              checked={isChildVisible}
-                              onChange={() => handleVisibilityToggle(child.id)}
-                              className="category-checkbox"
-                            />
-                            <label 
-                              htmlFor={`visibility-${child.id}`}
-                              className="category-color-indicator"
-                              style={{ 
-                                backgroundColor: child.color || `hsl(${(child.id * 40) % 360}, 70%, 60%)`,
-                                opacity: isChildVisible ? 1 : 0.4 
-                              }}
-                            ></label>
-                          </div>
-                          <div className="subcategory-name">{child.name}</div>
-                        </div>
+                      <div key={child.id} 
+                           className={`subcategory-chip ${isChildVisible ? 'visible' : 'hidden'}`}
+                           onClick={() => handleVisibilityToggle(child.id)}>
+                        <span 
+                          className="subcategory-color" 
+                          style={{ backgroundColor: child.color || category.color }}
+                        ></span>
+                        <span className="subcategory-name">{child.name}</span>
                       </div>
                     );
                   })}
