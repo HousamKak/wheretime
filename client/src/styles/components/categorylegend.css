@@ -7,7 +7,7 @@
 }
 
 .category-list {
-  margin-top: 0.5rem;
+  margin-top: 0.25rem;
 }
 
 .category-item {
@@ -21,7 +21,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.625rem 0.75rem;
+  padding: 0.5rem 0.625rem;
   background-color: #f9fafb;
   border: 1px solid #e5e7eb;
   border-radius: 0.375rem;
@@ -32,28 +32,34 @@
   background-color: #f3f4f6;
 }
 
-.category-header.active {
+.category-header.expanded {
   background-color: #eff6ff;
   border-color: #bfdbfe;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
 }
 
-/* New toggle container with switch */
+/* Toggle container with switch */
 .toggle-container {
   display: flex;
   align-items: center;
   flex: 1;
+  min-width: 0; /* Allow flex item to shrink below content size */
   cursor: pointer;
+  margin-right: 0.5rem; /* Space between toggle and controls */
 }
 
 /* Toggle switch styling */
 .toggle-switch {
   position: relative;
+  min-width: 36px;
   width: 36px;
   height: 20px;
   border-radius: 20px;
   background-color: #e5e7eb;
   margin-right: 10px;
   transition: background-color 0.2s ease;
+  flex-shrink: 0; /* Prevent toggle from shrinking */
 }
 
 .toggle-switch.on {
@@ -88,7 +94,8 @@
 .category-label {
   display: flex;
   align-items: center;
-  flex: 1;
+  min-width: 0; /* Allow flex item to shrink below content size */
+  overflow: hidden; /* Enable text truncation */
 }
 
 .category-color-dot {
@@ -96,37 +103,55 @@
   height: 10px;
   border-radius: 50%;
   margin-right: 8px;
+  flex-shrink: 0; /* Prevent dot from shrinking */
 }
 
 .category-name {
   font-size: 0.875rem;
   font-weight: 500;
   color: #374151;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.category-expand-btn {
+/* Category controls - right side */
+.category-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  flex-shrink: 0; /* Prevent controls from shrinking */
+}
+
+/* Sum toggle styling */
+.sum-toggle, .expand-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: none;
-  border: none;
-  width: 1.5rem;
-  height: 1.5rem;
-  color: #6b7280;
+  width: 28px;
+  height: 28px;
+  border-radius: 0.25rem;
+  background-color: #f3f4f6;
+  color: #4b5563;
+  border: 1px solid #e5e7eb;
   cursor: pointer;
-  transition: transform 0.3s ease;
-  border-radius: 50%;
+  transition: all 0.2s ease;
+  padding: 0;
 }
 
-.category-expand-btn:hover {
+.sum-toggle:hover, .expand-btn:hover {
   background-color: #e5e7eb;
-  color: #374151;
 }
 
-.category-expand-btn.expanded {
-  transform: rotate(90deg);
+.sum-toggle.active, .expand-btn.active {
   background-color: #dbeafe;
-  color: #3b82f6;
+  color: #2563eb;
+  border-color: #bfdbfe;
+}
+
+.expand-btn.active {
+  transform: rotate(90deg);
 }
 
 /* Subcategory chips layout */
@@ -135,11 +160,11 @@
   flex-wrap: wrap;
   gap: 0.5rem;
   padding: 0.625rem;
-  margin-top: 0.375rem;
-  margin-left: 1.25rem;
   background-color: #f9fafb;
-  border-radius: 0.375rem;
-  border: 1px solid #e5e7eb;
+  border: 1px solid #bfdbfe;
+  border-top: none;
+  border-bottom-left-radius: 0.375rem;
+  border-bottom-right-radius: 0.375rem;
 }
 
 .subcategory-chip {
@@ -175,20 +200,14 @@
   border-radius: 50%;
   display: inline-block;
   margin-right: 6px;
+  flex-shrink: 0; /* Prevent color dot from shrinking */
 }
 
 .subcategory-name {
   color: #4b5563;
-}
-
-/* Sidebar heading styles */
-.sidebar-heading {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #111827;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid #e5e7eb;
-  margin-bottom: 0.75rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Empty state */

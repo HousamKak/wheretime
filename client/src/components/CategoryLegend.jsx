@@ -8,17 +8,17 @@ const CategoryLegend = ({
   onToggleExpand,
   onToggleVisibility
 }) => {
-  // State to track which category is currently expanded (only one at a time)
-  const [activeCategory, setActiveCategory] = useState(null);
+  // State to track UI expansion of categories (for showing subcategory list)
+  const [expandedUI, setExpandedUI] = useState({});
   
   // Organize categories into a hierarchy using useMemo for better performance
-  const { rootCategories } = useMemo(() => {
+  const { rootCategories, categoryMap } = useMemo(() => {
     const rootCats = [];
-    const categoryMap = {};
+    const catMap = {};
     
     // Create objects for all categories
     categories.forEach(cat => {
-      categoryMap[cat.id] = { 
+      catMap[cat.id] = { 
         ...cat, 
         children: [] 
       };
@@ -27,33 +27,68 @@ const CategoryLegend = ({
     // Organize into hierarchy
     categories.forEach(cat => {
       if (cat.parent_id) {
-        if (categoryMap[cat.parent_id]) {
-          categoryMap[cat.parent_id].children.push(categoryMap[cat.id]);
+        if (catMap[cat.parent_id]) {
+          catMap[cat.parent_id].children.push(catMap[cat.id]);
         }
       } else {
-        rootCats.push(categoryMap[cat.id]);
+        rootCats.push(catMap[cat.id]);
       }
     });
     
-    return { rootCategories: rootCats, categoryMap };
+    return { rootCategories: rootCats, categoryMap: catMap };
   }, [categories]);
   
-  // FIX: Handle visibility toggle with correct logic
-  // When checkbox is checked, the category should be visible
-  const handleVisibilityToggle = (categoryId) => {
-    if (onToggleVisibility) {
-      onToggleVisibility(categoryId);
+  // Handle main category toggle
+  const handleMainToggle = (categoryId) => {
+    if (!onToggleVisibility) return;
+    
+    // Get all subcategories
+    const children = categoryMap[categoryId]?.children || [];
+    
+    // Get current visibility state of main category
+    const isCurrentlyVisible = categoryVisibility[categoryId] !== false;
+    
+    // If turning OFF the main category, turn off all subcategories too
+    if (isCurrentlyVisible) {
+      // Main category is currently visible, so we're turning it off
+      onToggleVisibility(categoryId); // Toggle main category off
+      
+      // Turn off all subcategories
+      children.forEach(child => {
+        if (categoryVisibility[child.id] !== false) {
+          onToggleVisibility(child.id); // Only toggle if currently visible
+        }
+      });
+    } else {
+      // Main category is currently invisible, so we're turning it on
+      onToggleVisibility(categoryId); // Toggle main category on
+      
+      // Do not automatically turn on subcategories when main is turned on
+      // Let user control individual subcategories
     }
   };
   
-  // Handle expand toggle - only allow one category expanded at a time
-  const handleExpandToggle = (categoryId, event) => {
-    event.stopPropagation(); // Prevent triggering parent click
+  // Toggle subcategory visibility (only when main category is visible)
+  const handleSubcategoryToggle = (parentId, childId) => {
+    // Only allow toggle if parent is visible
+    if (categoryVisibility[parentId] !== false && onToggleVisibility) {
+      onToggleVisibility(childId);
+    }
+  };
+  
+  // Toggle UI expansion for a category (shows/hides subcategory list)
+  const handleUIExpand = (categoryId) => {
+    setExpandedUI(prev => ({
+      ...prev,
+      [categoryId]: !prev[categoryId]
+    }));
+  };
+  
+  // Handle toggling the sum graph visibility
+  const handleSumToggle = (categoryId, event) => {
+    event.stopPropagation(); // Prevent triggering UI expansion
     
-    // Toggle active category
-    setActiveCategory(activeCategory === categoryId ? null : categoryId);
-    
-    // Call parent handler if provided
+    // This is now purely about showing/hiding the sum graph
     if (onToggleExpand) {
       onToggleExpand(categoryId);
     }
@@ -65,27 +100,27 @@ const CategoryLegend = ({
   
   return (
     <div className="category-legend">
-      {/* Removed the heading - let the parent component handle it */}
-      
       <div className="category-list">
         {rootCategories.map(category => {
-          // FIX: Correct the visibility logic - true means visible
-          const isVisible = categoryVisibility[category.id] !== false;
-          const isExpanded = activeCategory === category.id;
+          const isMainVisible = categoryVisibility[category.id] !== false;
           const hasChildren = category.children && category.children.length > 0;
+          const isUIExpanded = expandedUI[category.id];
+          
+          // Whether the sum graph is showing (true = sum is visible)
+          const isSumVisible = expandedCategories[category.id] === true;
           
           return (
             <div key={category.id} className="category-item">
-              <div 
-                className={`category-header ${isExpanded ? 'active' : ''}`}
-              >
-                {/* IMPROVED: Toggle button with better visual design */}
-                <div className="toggle-container" onClick={() => handleVisibilityToggle(category.id)}>
-                  <div className={`toggle-switch ${isVisible ? 'on' : 'off'}`}>
+              <div className={`category-header ${isUIExpanded ? 'expanded' : ''}`}>
+                {/* Main category toggle */}
+                <div 
+                  className="toggle-container" 
+                  onClick={() => handleMainToggle(category.id)}
+                >
+                  <div className={`toggle-switch ${isMainVisible ? 'on' : 'off'}`}>
                     <div className="toggle-slider"></div>
                   </div>
                   
-                  {/* Category color and name */}
                   <div className="category-label">
                     <span 
                       className="category-color-dot"
@@ -95,32 +130,51 @@ const CategoryLegend = ({
                   </div>
                 </div>
                 
-                {/* Expand/collapse button (only for categories with children) */}
-                {hasChildren && (
-                  <button
-                    type="button"
-                    onClick={(e) => handleExpandToggle(category.id, e)}
-                    className={`category-expand-btn ${isExpanded ? 'expanded' : ''}`}
-                    aria-label={isExpanded ? 'Collapse category' : 'Expand category'}
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
-                      <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
-                    </svg>
-                  </button>
-                )}
+                <div className="category-controls">
+                  {/* Sum graph toggle button - only for categories with children */}
+                  {hasChildren && (
+                    <button
+                      type="button"
+                      onClick={(e) => handleSumToggle(category.id, e)}
+                      className={`sum-toggle ${isSumVisible ? 'active' : ''}`}
+                      title={isSumVisible ? "Hide sum graph" : "Show sum graph"}
+                      disabled={!isMainVisible} // Disable when main category is off
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
+                        <path d="M10.75 6.75a.75.75 0 00-1.5 0v2.5h-2.5a.75.75 0 000 1.5h2.5v2.5a.75.75 0 001.5 0v-2.5h2.5a.75.75 0 000-1.5h-2.5v-2.5z" />
+                      </svg>
+                    </button>
+                  )}
+                  
+                  {/* Expand/collapse UI button - only for categories with children */}
+                  {hasChildren && (
+                    <button
+                      type="button"
+                      onClick={() => handleUIExpand(category.id)}
+                      className={`expand-btn ${isUIExpanded ? 'active' : ''}`}
+                      title={isUIExpanded ? "Hide subcategory list" : "Show subcategory list"}
+                      disabled={!isMainVisible} // Disable when main category is off
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
+                        <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
               </div>
               
-              {/* Render children if expanded - in a horizontal layout */}
-              {isExpanded && hasChildren && (
+              {/* Show subcategory list if this category is expanded in the UI and main category is visible */}
+              {isUIExpanded && hasChildren && isMainVisible && (
                 <div className="subcategory-container">
                   {category.children.map(child => {
-                    // FIX: Correct the visibility logic for subcategories
                     const isChildVisible = categoryVisibility[child.id] !== false;
                     
                     return (
-                      <div key={child.id} 
-                           className={`subcategory-chip ${isChildVisible ? 'visible' : 'hidden'}`}
-                           onClick={() => handleVisibilityToggle(child.id)}>
+                      <div 
+                        key={child.id} 
+                        className={`subcategory-chip ${isChildVisible ? 'visible' : 'hidden'}`}
+                        onClick={() => handleSubcategoryToggle(category.id, child.id)}
+                      >
                         <span 
                           className="subcategory-color" 
                           style={{ backgroundColor: child.color || category.color }}
