@@ -30,7 +30,7 @@ const CategoryCharts = ({
     return categories.filter((cat) => cat.parent_id === parentId);
   };
 
-  // Helper function to safely extract a day's value (treat falsy or missing values as 0)
+  // Helper function to safely extract a day's value (treat missing or invalid values as 0)
   const getDayValue = (day, key) => {
     let dayValue = 0;
     const value = day[key];
@@ -90,12 +90,13 @@ const CategoryCharts = ({
     }
   };
 
-  // Calculate total time (main category plus all subcategories) for mini chart preview
+  // Calculate total time for mini chart preview
+  // Only sum subcategories (ignoring the main category's own value)
   const calculateMiniTotal = (category) => {
     const childCategories = getChildCategories(category.id);
     return data.reduce((sum, day) => {
-      const mainKey = `category_${category.id}`;
-      let daySum = getDayValue(day, mainKey);
+      // Start with 0 (ignore any main category value)
+      let daySum = 0;
       childCategories.forEach((child) => {
         const childKey = `category_${child.id}`;
         daySum += getDayValue(day, childKey);
@@ -108,12 +109,12 @@ const CategoryCharts = ({
   const renderCategoryMiniChart = (category) => {
     const childCategories = getChildCategories(category.id);
     const forcedVisibility = {};
-    forcedVisibility[category.id] = true;
+    // Force visibility for subcategories for preview purposes
     childCategories.forEach((child) => {
       forcedVisibility[child.id] = true;
     });
 
-    // Calculate total time including both main category and all subcategories
+    // Calculate total time from subcategories only
     const totalTime = calculateMiniTotal(category);
     const formattedTime = formatTime(totalTime);
 
@@ -135,6 +136,7 @@ const CategoryCharts = ({
         <div className="cc-category-mini-content">
           <TimeSeriesChart
             data={data}
+            // Show chart for main category and its subcategories
             categories={[category, ...childCategories]}
             categoryVisibility={forcedVisibility}
             expandedCategories={{ [category.id]: true }}
@@ -178,12 +180,12 @@ const CategoryCharts = ({
     );
   };
 
-  // Calculate total time for the expanded modal view (always summing main + all subcategories)
+  // Calculate total time for the expanded modal view
+  // Only sum time from all subcategories (ignoring any value on the main category)
   const calculateCategoryTotal = () => {
     const childCategories = getChildCategories(selectedCategory.id);
     return data.reduce((sum, day) => {
-      const mainKey = `category_${selectedCategory.id}`;
-      let daySum = getDayValue(day, mainKey);
+      let daySum = 0;
       childCategories.forEach((child) => {
         const childKey = `category_${child.id}`;
         daySum += getDayValue(day, childKey);

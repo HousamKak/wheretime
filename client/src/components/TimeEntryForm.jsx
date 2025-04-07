@@ -4,48 +4,48 @@ import '../styles/components/form.css';
 
 const TimeEntryForm = ({ categories = [], onSuccess, compact = false, defaultDate }) => {
   const [formData, setFormData] = useState({
-    date: defaultDate || new Date().toISOString().split('T')[0], // Default to today
+    date: defaultDate || new Date().toISOString().split('T')[0],
     categoryId: '',
     hours: 0,
     minutes: 0,
     notes: '',
   });
 
-  const handleInputChange = (e) => {
+  const [errors, setErrors] = useState({});
+
+  const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: null }));
+    }
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Handle form submission logic
-    if (onSuccess) onSuccess(formData);
-    // Reset form or show success message
-    setFormData({
-      ...formData,
-      categoryId: '',
-      hours: 0,
-      minutes: 0,
-      notes: '',
-    });
+    // (Add form validation as needed)
+    if (onSuccess) {
+      onSuccess(formData);
+    }
   };
 
-  // Sort categories by name
-  const sortedCategories = [...categories].sort((a, b) => a.name.localeCompare(b.name));
+  // Only allow subcategories (those with a parent_id)
+  const validCategories = categories.filter((cat) => cat.parent_id);
 
-  // Group categories by parent for dropdown
-  const parentCategories = sortedCategories.filter(cat => !cat.parent_id);
-  const childCategories = sortedCategories.filter(cat => cat.parent_id);
-
-  // Group child categories by parent_id
-  const childrenByParent = childCategories.reduce((acc, cat) => {
-    if (!acc[cat.parent_id]) acc[cat.parent_id] = [];
+  // Group valid subcategories by their parent_id
+  const groupedSubcategories = validCategories.reduce((acc, cat) => {
+    if (!acc[cat.parent_id]) {
+      acc[cat.parent_id] = [];
+    }
     acc[cat.parent_id].push(cat);
     return acc;
   }, {});
+
+  // Get the parent's name for a given parent_id
+  const getParentName = (parentId) => {
+    const parent = categories.find((cat) => cat.id === parentId);
+    return parent ? parent.name : '';
+  };
 
   return (
     <div className={`time-entry-form ${compact ? 'compact' : ''}`}>
@@ -58,35 +58,31 @@ const TimeEntryForm = ({ categories = [], onSuccess, compact = false, defaultDat
               id="date"
               name="date"
               value={formData.date}
-              onChange={handleInputChange}
-              max={new Date().toISOString().split('T')[0]} // Don't allow future dates
+              onChange={handleChange}
             />
           </div>
-          
           <div className="form-group category-field">
-            <label htmlFor="categoryId">Category</label>
+            <label htmlFor="categoryId">Subcategory</label>
             <select
               id="categoryId"
               name="categoryId"
               value={formData.categoryId}
-              onChange={handleInputChange}
+              onChange={handleChange}
               required
             >
-              <option value="">Select a category</option>
-              {parentCategories.map((parent) => (
-                <React.Fragment key={parent.id}>
-                  <option value={parent.id}>{parent.name}</option>
-                  {childrenByParent[parent.id]?.map(child => (
-                    <option key={child.id} value={child.id}>
-                      &nbsp;&nbsp;└ {child.name}
+              <option value="">Select a subcategory</option>
+              {Object.keys(groupedSubcategories).map((parentId) => (
+                <optgroup key={parentId} label={getParentName(Number(parentId))}>
+                  {groupedSubcategories[parentId].map((sub) => (
+                    <option key={sub.id} value={sub.id}>
+                      {sub.name}
                     </option>
                   ))}
-                </React.Fragment>
+                </optgroup>
               ))}
             </select>
           </div>
         </div>
-
         <div className="form-group time-fields">
           <label>Time Spent</label>
           <div className="time-inputs">
@@ -95,7 +91,7 @@ const TimeEntryForm = ({ categories = [], onSuccess, compact = false, defaultDat
                 type="number"
                 name="hours"
                 value={formData.hours}
-                onChange={handleInputChange}
+                onChange={handleChange}
                 min="0"
                 placeholder="0"
               />
@@ -106,7 +102,7 @@ const TimeEntryForm = ({ categories = [], onSuccess, compact = false, defaultDat
                 type="number"
                 name="minutes"
                 value={formData.minutes}
-                onChange={handleInputChange}
+                onChange={handleChange}
                 min="0"
                 max="59"
                 placeholder="0"
@@ -115,19 +111,17 @@ const TimeEntryForm = ({ categories = [], onSuccess, compact = false, defaultDat
             </div>
           </div>
         </div>
-
         <div className="form-group">
           <label htmlFor="notes">Notes (Optional)</label>
           <textarea
             id="notes"
             name="notes"
             value={formData.notes}
-            onChange={handleInputChange}
-            rows={compact ? "2" : "4"}
+            onChange={handleChange}
+            rows={compact ? '2' : '4'}
             placeholder="Add any notes about this time entry"
           ></textarea>
         </div>
-
         <div className="form-footer">
           <Button type="submit" className="submit-btn">
             Save Time Entry
