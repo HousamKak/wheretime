@@ -38,6 +38,21 @@ const CategoryLegend = ({
     return { rootCategories: rootCats, categoryMap: catMap };
   }, [categories]);
   
+  // Reset UI expansion when category visibility changes
+  useEffect(() => {
+    // Create a new expanded UI state that respects category visibility
+    const newExpandedUI = {...expandedUI};
+    
+    // For each category, if it's not visible, collapse its UI
+    Object.keys(categoryVisibility).forEach(id => {
+      if (categoryVisibility[id] === false && newExpandedUI[id]) {
+        newExpandedUI[id] = false;
+      }
+    });
+    
+    setExpandedUI(newExpandedUI);
+  }, [categoryVisibility]);
+  
   // Handle main category toggle
   const handleMainToggle = (categoryId) => {
     if (!onToggleVisibility) return;
@@ -48,20 +63,31 @@ const CategoryLegend = ({
     // Get current visibility state of main category
     const isCurrentlyVisible = categoryVisibility[categoryId] !== false;
     
-    // If turning OFF the main category, turn off all subcategories too
+    // If turning OFF the main category
     if (isCurrentlyVisible) {
-      // Main category is currently visible, so we're turning it off
-      onToggleVisibility(categoryId); // Toggle main category off
+      // Toggle main category off
+      onToggleVisibility(categoryId);
       
-      // Turn off all subcategories
+      // Turn off all subcategories too
       children.forEach(child => {
         if (categoryVisibility[child.id] !== false) {
-          onToggleVisibility(child.id); // Only toggle if currently visible
+          onToggleVisibility(child.id);
         }
       });
+      
+      // Also reset sum graph state if turning off the main category
+      if (expandedCategories[categoryId] && onToggleExpand) {
+        onToggleExpand(categoryId);
+      }
+      
+      // Collapse the UI for this category
+      setExpandedUI(prev => ({
+        ...prev,
+        [categoryId]: false
+      }));
     } else {
       // Main category is currently invisible, so we're turning it on
-      onToggleVisibility(categoryId); // Toggle main category on
+      onToggleVisibility(categoryId);
       
       // Do not automatically turn on subcategories when main is turned on
       // Let user control individual subcategories
@@ -88,7 +114,7 @@ const CategoryLegend = ({
   const handleSumToggle = (categoryId, event) => {
     event.stopPropagation(); // Prevent triggering UI expansion
     
-    // This is now purely about showing/hiding the sum graph
+    // This is for showing the aggregation graph of only the selected subcategories
     if (onToggleExpand) {
       onToggleExpand(categoryId);
     }
@@ -137,7 +163,7 @@ const CategoryLegend = ({
                       type="button"
                       onClick={(e) => handleSumToggle(category.id, e)}
                       className={`sum-toggle ${isSumVisible ? 'active' : ''}`}
-                      title={isSumVisible ? "Hide sum graph" : "Show sum graph"}
+                      title={isSumVisible ? "Hide aggregated graph" : "Show aggregated graph of selected subcategories"}
                       disabled={!isMainVisible} // Disable when main category is off
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">

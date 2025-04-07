@@ -163,16 +163,25 @@ const Dashboard = ({
       console.error("toggleCategoryVisibility called with invalid categoryId:", categoryId);
       return;
     }
-
+  
     console.log("Toggling visibility for category:", categoryId);
     console.log("Current visibility state:", categoryVisibility);
-
+  
     setCategoryVisibility(prev => {
       const newState = {
         ...prev,
         [categoryId]: !prev[categoryId]
       };
       console.log("New visibility state:", newState);
+      
+      // If we're turning OFF a category, also reset its expansion state
+      if (newState[categoryId] === false && expandedCategories[categoryId]) {
+        setExpandedCategories(prevExpanded => ({
+          ...prevExpanded,
+          [categoryId]: false
+        }));
+      }
+      
       return newState;
     });
   };

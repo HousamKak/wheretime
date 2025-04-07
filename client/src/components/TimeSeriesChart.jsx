@@ -207,15 +207,16 @@ const TimeSeriesChart = ({ data, categories, categoryVisibility, expandedCategor
         const seriesData = formattedData.map(day => {
           let value = day[categoryKey] || 0;
           
-          // For parent categories with visible children, calculate the sum differently
+          // For parent categories with expanded state to show aggregation
           if (isParent && isExpanded) {
-            // If it's an expanded parent, use the total of all its children
+            // Get all subcategories of this parent
             const childrenIds = categoryHierarchy.categoryMap[category.id].children.map(child => child.id);
             
-            // If children are visible, sum them up; otherwise use the parent's value
+            // Filter to only include subcategories that are currently visible/selected
             const visibleChildren = childrenIds.filter(id => categoryVisibility[id] !== false);
             
             if (visibleChildren.length > 0) {
+              // Sum up only the selected subcategories
               value = visibleChildren.reduce((sum, childId) => {
                 return sum + (day[`category_${childId}`] || 0);
               }, 0);
