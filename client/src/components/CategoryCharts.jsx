@@ -1,5 +1,5 @@
 import React, { useState, useRef, useMemo } from 'react';
-import { Modal } from './common/Modal';
+import { ChartModal } from './ChartModal';
 import TimeSeriesChart from './TimeSeriesChart';
 import { Button } from './common/Button';
 
@@ -175,11 +175,11 @@ const CategoryCharts = ({
         }, 0);
 
         return (
-            <Modal
+            <ChartModal
                 isOpen={isModalOpen}
                 onClose={handleCloseModal}
                 title={`${selectedCategory.name} - ${formatTime(categoryTotal)}`}
-                size="2xl"
+                size="full"
             >
                 <div className="modal-chart-container">
                     {childCats.length > 0 && (
@@ -234,7 +234,7 @@ const CategoryCharts = ({
                         />
                     </div>
                 </div>
-            </Modal>
+            </ChartModal>
         );
     };
 
