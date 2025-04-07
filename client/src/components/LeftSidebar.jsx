@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import TimeEntryForm from './TimeEntryForm';
+import { Button } from './common/Button';
 import '../styles/components/leftsidebar.css';
 
 const LeftSidebar = ({ 
@@ -12,6 +13,14 @@ const LeftSidebar = ({
   totalTime,
   categories 
 }) => {
+  // Add state to track form visibility
+  const [isFormVisible, setIsFormVisible] = useState(true);
+
+  // Toggle form visibility
+  const toggleFormVisibility = () => {
+    setIsFormVisible(!isFormVisible);
+  };
+
   // Format minutes as hours and minutes
   const formatTime = (minutes) => {
     if (!minutes) return '0h 0m';
@@ -109,11 +118,37 @@ const LeftSidebar = ({
           </div>
         </div>
         
-        <div className="sidebar-section">
-          <TimeEntryForm 
-            categories={categories}
-            compact={true}
-          />
+        {/* Time Log Form with toggle button */}
+        <div className="sidebar-section log-time-section">
+          <div className="log-time-header">
+            <h3 className="sidebar-heading">Log Your Time</h3>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={toggleFormVisibility}
+              className="toggle-form-btn"
+            >
+              {isFormVisible ? 'Hide Form' : 'Show Form'}
+              <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                viewBox="0 0 20 20" 
+                fill="currentColor" 
+                className={`w-5 h-5 ml-1 transform ${isFormVisible ? 'rotate-180' : ''}`}
+              >
+                <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
+              </svg>
+            </Button>
+          </div>
+          
+          {/* Conditionally render the form based on visibility state */}
+          {isFormVisible && (
+            <div className="time-entry-form-container">
+              <TimeEntryForm 
+                categories={categories}
+                compact={true}
+              />
+            </div>
+          )}
         </div>
         
         <div className="sidebar-section">
