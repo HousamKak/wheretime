@@ -1,20 +1,17 @@
-/* Dashboard page styles */
+/* Dashboard page styles - ensure full width */
 .dashboard-page-container {
-    width: 100%;
-    min-height: calc(100vh - 64px);
-    background-color: var(--color-gray-50);
-    overflow-x: hidden;
-  }
-  
-  .dashboard-alert {
-    margin: 16px;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    z-index: 45;
-    position: relative;
-  }
-  
-  /* Ensure dashboard container has correct height */
-  .dashboard-page-container > div {
-    min-height: calc(100vh - 64px);
-  }
+  width: 100%;
+  min-height: calc(100vh - 64px);
+  background-color: #f9fafb;
+  overflow-x: hidden;
+  max-width: none; /* Remove any max-width constraints */
+  padding: 0; /* Remove any padding that might constrain width */
+}
+
+.dashboard-alert {
+  margin: 16px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  z-index: 45;
+  position: relative;
+}
