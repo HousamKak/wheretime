@@ -1,61 +1,85 @@
-/* Dashboard component styles - Fixed layout */
+/* Dashboard layout - no scrollbars, wider charts */
 .dashboard-container {
   display: flex;
   position: relative;
   width: 100%;
   min-height: calc(100vh - 4rem); /* Adjust for header height */
-  background-color: #f3f4f6;
-  overflow: hidden; /* Prevent horizontal scroll */
+  background-color: #f9fafb;
+  overflow: visible; /* Allow content to expand naturally */
 }
 
-/* Main content area */
+/* Sidebar styles - fixed width, full height */
+.left-sidebar, .right-sidebar {
+  position: fixed;
+  top: 4rem; /* Align with header */
+  height: calc(100vh - 4rem);
+  background-color: white;
+  z-index: 40;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
+}
+
+/* Left sidebar - narrower */
+.left-sidebar {
+  left: 0;
+  width: 240px;
+  border-right: 1px solid #e5e7eb;
+}
+
+/* Right sidebar - wider for better readability */
+.right-sidebar {
+  right: 0;
+  width: 280px;
+  border-left: 1px solid #e5e7eb;
+}
+
+.left-sidebar.closed {
+  transform: translateX(-100%);
+}
+
+.right-sidebar.closed {
+  transform: translateX(100%);
+}
+
+/* Main content area - no scroll */
 .main-content {
   flex: 1;
-  padding: 1.5rem 1rem;
-  transition: margin 0.3s ease-in-out;
-  overflow-y: auto;
-  overflow-x: hidden; /* Prevent horizontal scroll */
-  width: 100%;
-  box-sizing: border-box;
-  margin-left: 280px;  /* Width of left sidebar */
-  margin-right: 280px; /* Width of right sidebar */
-  max-width: calc(100% - 560px); /* Ensure it doesn't overflow */
+  padding: 1.5rem;
+  margin-left: 240px; /* Same as left sidebar width */
+  margin-right: 280px; /* Same as right sidebar width */
+  width: calc(100% - 520px); /* Full width minus both sidebars */
+  height: auto; /* Let it expand naturally */
+  overflow: visible; /* No scrolling */
+  background-color: #f9fafb;
 }
 
 .main-content.left-closed {
   margin-left: 0;
-  max-width: calc(100% - 280px);
+  width: calc(100% - 280px);
 }
 
 .main-content.right-closed {
   margin-right: 0;
-  max-width: calc(100% - 280px);
+  width: calc(100% - 240px);
 }
 
 .main-content.full-width {
   margin-left: 0;
   margin-right: 0;
-  max-width: 100%;
+  width: 100%;
 }
 
-/* Chart card styling */
+/* Full-width chart card with fixed height */
 .chart-card {
   background-color: white;
   border-radius: 0.5rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   padding: 1.25rem;
-  min-height: 50vh;
+  margin-bottom: 1.5rem;
+  height: 500px; /* Fixed height */
   display: flex;
   flex-direction: column;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  margin-bottom: 2rem;
-  position: relative;
-  z-index: 1;
-}
-
-.chart-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  width: 100%;
 }
 
 .chart-title {
@@ -78,42 +102,10 @@
   border-radius: 2px;
 }
 
-/* Chart loading and empty states */
-.chart-loading, .chart-empty {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: #6b7280;
-  min-height: 300px;
-}
-
-.chart-empty {
-  background-color: #f9fafb;
-  border-radius: 0.5rem;
-  border: 1px dashed #d1d5db;
-}
-
-/* Loading spinner */
-.spinner {
-  width: 2.5rem;
-  height: 2.5rem;
-  border: 3px solid rgba(59, 130, 246, 0.3);
-  border-radius: 50%;
-  border-top-color: #3b82f6;
-  animation: spin 1s linear infinite;
-  margin-bottom: 0.75rem;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-/* Toggle buttons for sidebars */
+/* Sidebar toggle buttons */
 .sidebar-toggle {
   position: fixed;
-  z-index: 45; /* Higher than sidebars */
+  z-index: 45;
   top: 50%;
   transform: translateY(-50%);
   width: 1.5rem;
@@ -126,13 +118,6 @@
   justify-content: center;
   cursor: pointer;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
-}
-
-.sidebar-toggle:hover {
-  background-color: #f3f4f6;
-  color: #111827;
-  transform: translateY(-50%) scale(1.05);
 }
 
 .left-toggle {
@@ -147,71 +132,88 @@
   border-right: none;
 }
 
-/* Fix sidebar positioning */
-.left-sidebar {
-  position: fixed;
-  left: 0;
-  top: 64px;
-  width: 280px;
-  bottom: 0;
-  z-index: 40;
-  background: white;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  transform: translateX(0);
-  transition: transform 0.3s ease;
+/* Loading state */
+.chart-loading {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
 }
 
-.left-sidebar.closed {
-  transform: translateX(-100%);
+.spinner {
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 3px solid rgba(59, 130, 246, 0.3);
+  border-radius: 50%;
+  border-top-color: #3b82f6;
+  animation: spin 1s linear infinite;
+  margin-bottom: 0.75rem;
 }
 
-.right-sidebar {
-  position: fixed;
-  right: 0;
-  top: 64px;
-  width: 280px;
-  bottom: 0;
-  z-index: 40;
-  background: white;
-  box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.1);
-  transform: translateX(0);
-  transition: transform 0.3s ease;
+.chart-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+  background-color: #f9fafb;
+  border-radius: 0.5rem;
+  border: 1px dashed #d1d5db;
 }
 
-.right-sidebar.closed {
-  transform: translateX(100%);
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 /* Responsive adjustments */
 @media (max-width: 1280px) {
+  .left-sidebar {
+    width: 220px;
+  }
+  
+  .right-sidebar {
+    width: 260px;
+  }
+  
   .main-content {
-    margin-left: 250px;
-    margin-right: 250px;
-    max-width: calc(100% - 500px);
+    margin-left: 220px;
+    margin-right: 260px;
+    width: calc(100% - 480px);
   }
   
-  .left-sidebar, .right-sidebar {
-    width: 250px;
+  .main-content.left-closed {
+    width: calc(100% - 260px);
   }
   
-  .main-content.left-closed, .main-content.right-closed {
-    max-width: calc(100% - 250px);
+  .main-content.right-closed {
+    width: calc(100% - 220px);
   }
 }
 
 @media (max-width: 1024px) {
+  .left-sidebar {
+    width: 200px;
+  }
+  
+  .right-sidebar {
+    width: 240px;
+  }
+  
   .main-content {
-    margin-left: 220px;
-    margin-right: 220px;
-    max-width: calc(100% - 440px);
+    margin-left: 200px;
+    margin-right: 240px;
+    width: calc(100% - 440px);
   }
   
-  .left-sidebar, .right-sidebar {
-    width: 220px;
+  .main-content.left-closed {
+    width: calc(100% - 240px);
   }
   
-  .main-content.left-closed, .main-content.right-closed {
-    max-width: calc(100% - 220px);
+  .main-content.right-closed {
+    width: calc(100% - 200px);
   }
 }
 
@@ -219,12 +221,12 @@
   .main-content {
     margin-left: 0;
     margin-right: 0;
-    padding: 1rem 0.75rem;
-    max-width: 100%;
+    width: 100%;
+    padding: 1rem;
   }
   
   .left-sidebar, .right-sidebar {
-    width: 85%;
-    max-width: 320px;
+    width: 80%;
+    max-width: 280px;
   }
 }

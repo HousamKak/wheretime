@@ -15,14 +15,6 @@ const Dashboard = ({
   onDateRangeChange,
   loading = false
 }) => {
-  console.log("Dashboard render - props received:", {
-    categoriesCount: categories.length,
-    logsCount: logs.length,
-    statsCount: stats.length,
-    dateRange,
-    loading
-  });
-
   // State for controlling sidebar visibility
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(true);
   const [rightSidebarOpen, setRightSidebarOpen] = useState(true);
@@ -43,21 +35,17 @@ const Dashboard = ({
     return result;
   }, [categories]);
 
-  // Initialize category visibility state with useMemo to handle async loading
+  // Initialize category visibility state - all categories toggled OFF by default
   const initialCategoryVisibility = useMemo(() => {
-    console.log("Initializing category visibility state with:", categories.length, "categories");
     const result = categories.reduce((acc, category) => {
-      acc[category.id] = false;
+      acc[category.id] = false; // Default to NOT visible
       return acc;
     }, {});
-    console.log("Initial category visibility state:", result);
     return result;
   }, [categories]);
 
   // Initialize expanded categories state
   const initialExpandedCategories = useMemo(() => {
-    console.log("Initializing expanded categories state with:", categories.length, "categories");
-
     // Initialize expansion state 
     const result = categories.reduce((acc, category) => {
       if (!category.parent_id) { // Root category
@@ -67,8 +55,6 @@ const Dashboard = ({
       }
       return acc;
     }, {});
-
-    console.log("Initial expanded categories state:", result);
     return result;
   }, [categories, childrenByParent]);
 
@@ -79,9 +65,6 @@ const Dashboard = ({
 
   // Update state when categories change
   useEffect(() => {
-    console.log("Categories changed, updating visibility and expansion states");
-    console.log("New visibility state:", initialCategoryVisibility);
-    console.log("New expanded state:", initialExpandedCategories);
     setCategoryVisibility(initialCategoryVisibility);
     setExpandedCategories(initialExpandedCategories);
   }, [categories, initialCategoryVisibility, initialExpandedCategories]);
@@ -117,7 +100,6 @@ const Dashboard = ({
 
   // Handle preset range selection
   const handlePresetChange = (preset) => {
-    console.log("Preset range changed to:", preset);
     const today = new Date();
     let start, end;
 
@@ -147,7 +129,6 @@ const Dashboard = ({
         return;
     }
 
-    console.log("New date range:", { start, end });
     setPresetRange(preset);
     onDateRangeChange({ start, end });
   };
@@ -159,20 +140,13 @@ const Dashboard = ({
 
   // Toggle category visibility
   const toggleCategoryVisibility = (categoryId) => {
-    if (!categoryId) {
-      console.error("toggleCategoryVisibility called with invalid categoryId:", categoryId);
-      return;
-    }
-  
-    console.log("Toggling visibility for category:", categoryId);
-    console.log("Current visibility state:", categoryVisibility);
+    if (!categoryId) return;
   
     setCategoryVisibility(prev => {
       const newState = {
         ...prev,
         [categoryId]: !prev[categoryId]
       };
-      console.log("New visibility state:", newState);
       
       // If we're turning OFF a category, also reset its expansion state
       if (newState[categoryId] === false && expandedCategories[categoryId]) {
@@ -188,51 +162,35 @@ const Dashboard = ({
 
   // Toggle category expansion
   const toggleCategoryExpansion = (categoryId) => {
-    if (!categoryId) {
-      console.error("toggleCategoryExpansion called with invalid categoryId:", categoryId);
-      return;
-    }
-
-    console.log("Toggling expansion for category:", categoryId);
-    console.log("Current expansion state:", expandedCategories);
+    if (!categoryId) return;
 
     setExpandedCategories(prev => {
       const newState = {
         ...prev,
         [categoryId]: !prev[categoryId]
       };
-      console.log("New expansion state:", newState);
       return newState;
     });
   };
 
   // Calculate total time from stats
   const totalTime = stats.reduce((total, stat) => {
-    // The API likely uses snake_case (total_time) instead of camelCase (totalTime)
     const timeValue = stat.total_time || stat.totalTime || stat.time || 0;
     return total + timeValue;
   }, 0);
 
-  console.log("Calculated total time:", totalTime, "minutes from", stats.length, "stats");
-
   // Process logs data for the chart
   const processLogsForChart = () => {
     try {
-      console.log("Processing logs for chart, logs count:", logs?.length || 0);
-
       if (!logs || logs.length === 0) {
-        console.log("No logs to process, returning empty array");
         return [];
       }
-
-      console.log("Categories available for processing:", categories.length);
 
       // Create a lookup for valid categories
       const categoryMap = {};
       categories.forEach(cat => {
         categoryMap[cat.id] = cat;
       });
-      console.log("Valid category IDs:", Object.keys(categoryMap));
 
       // Group logs by date
       const dateGroups = {};
@@ -240,7 +198,6 @@ const Dashboard = ({
       // First pass: Initialize days
       logs.forEach(log => {
         if (!log.date) {
-          console.warn("Log missing date:", log);
           return;
         }
 
@@ -255,8 +212,6 @@ const Dashboard = ({
           });
         }
       });
-
-      console.log("Initialized date groups:", Object.keys(dateGroups).length);
 
       // Second pass: Add time values for logs
       logs.forEach(log => {
@@ -274,9 +229,6 @@ const Dashboard = ({
             // Add to parent category's time
             const parentKey = `category_${parentCategory.id}`;
             dateGroups[log.date][parentKey] = (dateGroups[log.date][parentKey] || 0) + (log.total_time || 0);
-            console.log(`Mapped subcategory ${categoryId} to parent ${parentCategory.id}`);
-          } else {
-            console.warn(`Cannot find category with ID ${categoryId} - skipping log`);
           }
           return;
         }
@@ -288,11 +240,8 @@ const Dashboard = ({
 
       // Convert to array and sort by date
       const result = Object.values(dateGroups).sort((a, b) => new Date(a.date) - new Date(b.date));
-      console.log("Processed chart data, points count:", result.length);
-
       return result;
     } catch (error) {
-      console.error("Error processing chart data:", error);
       setDataError("Failed to process time data. There may be an issue with your logs or categories.");
       return [];
     }
@@ -318,13 +267,6 @@ const Dashboard = ({
     );
   };
 
-  console.log("Rendering Dashboard with state:", {
-    categoryVisibility,
-    expandedCategories,
-    leftSidebarOpen,
-    rightSidebarOpen
-  });
-
   return (
     <div className="dashboard-container">
       {/* Left Sidebar Toggle Button (Visible when sidebar is closed) */}
@@ -349,7 +291,6 @@ const Dashboard = ({
           endDate: dateRange.end
         }}
         onDateRangeChange={(newRange) => {
-          console.log("Date range changed in LeftSidebar:", newRange);
           onDateRangeChange({
             start: newRange.startDate,
             end: newRange.endDate
@@ -362,7 +303,7 @@ const Dashboard = ({
       />
 
       {/* Main Content Area */}
-      <main className={`main-content ${!leftSidebarOpen && !rightSidebarOpen ? 'full-width' : ''} ${!leftSidebarOpen ? 'left-closed' : ''} ${!rightSidebarOpen ? 'right-closed' : ''}`}>
+      <div className={`main-content ${!leftSidebarOpen && !rightSidebarOpen ? 'full-width' : ''} ${!leftSidebarOpen ? 'left-closed' : ''} ${!rightSidebarOpen ? 'right-closed' : ''}`}>
         {renderDataError()}
 
         <div className="chart-card">
@@ -396,7 +337,7 @@ const Dashboard = ({
             onToggleVisibility={toggleCategoryVisibility}
           />
         )}
-      </main>
+      </div>
 
       {/* Right Sidebar Toggle Button (Visible when sidebar is closed) */}
       {!rightSidebarOpen && (
