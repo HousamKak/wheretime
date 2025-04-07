@@ -275,17 +275,18 @@ app.post('/logs', (req, res) => {
       return res.status(400).json({ error: 'total_time must be a positive number' });
     }
     
-    // Check if category exists
-    const category = db.prepare('SELECT id FROM categories WHERE id = ?').get(category_id);
+    // Check if category exists and enforce subcategory logging (not allowed for main categories)
+    const category = db.prepare('SELECT id, parent_id FROM categories WHERE id = ?').get(category_id);
     if (!category) {
       return res.status(400).json({ error: 'Category does not exist' });
+    }
+    if (category.parent_id === null) {
+      return res.status(400).json({ error: 'Logging time for main categories is not allowed. Please select a subcategory.' });
     }
     
     // Check if log already exists for this category and date
     const existingLog = db.prepare('SELECT id FROM time_logs WHERE category_id = ? AND date = ?').get(category_id, date);
-    
-    let stmt;
-    let result;
+    let stmt, result;
     
     if (existingLog) {
       // Update existing log
