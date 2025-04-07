@@ -1,19 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { saveLog } from '../services/timeLogService';
+import { Alert } from './common/Alert';
 import { format } from 'date-fns';
-import axios from 'axios';
-import '../styles/components/timeentryform.css';
+import '../styles/components/form.css';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-
-const TimeEntryForm = ({ categories, onSuccess, compact = false }) => {
-  const [isLoading, setIsLoading] = useState(false);
-  const [formVisible, setFormVisible] = useState(!compact); // If compact, start collapsed
-  const [error, setError] = useState(null);
-  const [successMessage, setSuccessMessage] = useState(null);
-  
+const TimeEntryForm = ({ 
+  categories = [], 
+  onSuccess, 
+  compact = false,
+  defaultDate = format(new Date(), 'yyyy-MM-dd')
+}) => {
   // Form state
   const [formData, setFormData] = useState({
-    date: format(new Date(), 'yyyy-MM-dd'),
+    date: defaultDate,
     categoryId: '',
     hours: 0,
     minutes: 0,
@@ -21,61 +20,40 @@ const TimeEntryForm = ({ categories, onSuccess, compact = false }) => {
   });
   
   // Form validation errors
-  const [formErrors, setFormErrors] = useState({
-    date: '',
-    categoryId: '',
-    time: '',
-    general: ''
-  });
-
-  // Toggle form visibility
-  const toggleForm = () => {
-    setFormVisible(!formVisible);
-    
-    // Reset form when closing
-    if (formVisible) {
-      resetForm();
-    }
-  };
-
-  // Reset form to initial state
-  const resetForm = () => {
-    setFormData({
-      date: format(new Date(), 'yyyy-MM-dd'),
-      categoryId: '',
-      hours: 0,
-      minutes: 0,
-      notes: ''
-    });
-    
-    setFormErrors({
-      date: '',
-      categoryId: '',
-      time: '',
-      general: ''
-    });
-    
-    setError(null);
-    setSuccessMessage(null);
-  };
-
+  const [formErrors, setFormErrors] = useState({});
+  
+  // Form submission state
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitMessage, setSubmitMessage] = useState(null);
+  const [submitStatus, setSubmitStatus] = useState(null); // 'success' or 'error'
+  
+  // Update form date when defaultDate changes
+  useEffect(() => {
+    setFormData(prev => ({
+      ...prev,
+      date: defaultDate
+    }));
+  }, [defaultDate]);
+  
   // Handle form input changes
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type } = e.target;
     
     // Special handling for numeric inputs
     if (name === 'hours' || name === 'minutes') {
       // Ensure the value is a valid number
-      const numValue = parseInt(value) || 0;
+      let numValue = parseInt(value) || 0;
       
       // Ensure minutes are between 0 and 59
-      const sanitizedValue = name === 'minutes' 
-        ? Math.min(Math.max(numValue, 0), 59) 
-        : Math.max(numValue, 0);
+      if (name === 'minutes') {
+        numValue = Math.min(Math.max(numValue, 0), 59);
+      } else {
+        numValue = Math.max(numValue, 0);
+      }
       
       setFormData(prev => ({
         ...prev,
-        [name]: sanitizedValue
+        [name]: numValue
       }));
     } else {
       setFormData(prev => ({
@@ -84,51 +62,44 @@ const TimeEntryForm = ({ categories, onSuccess, compact = false }) => {
       }));
     }
     
-    // Clear error when user types
+    // Clear error when field is edited
     if (formErrors[name]) {
       setFormErrors(prev => ({
         ...prev,
         [name]: ''
       }));
     }
-    if (name === 'hours' || name === 'minutes') {
+    
+    // Clear error related to time fields
+    if ((name === 'hours' || name === 'minutes') && formErrors.time) {
       setFormErrors(prev => ({
         ...prev,
         time: ''
       }));
     }
   };
-
+  
   // Validate form before submission
   const validateForm = () => {
-    let valid = true;
-    const errors = {
-      date: '',
-      categoryId: '',
-      time: '',
-      general: ''
-    };
+    const errors = {};
     
     if (!formData.date) {
       errors.date = 'Date is required';
-      valid = false;
     }
     
     if (!formData.categoryId) {
       errors.categoryId = 'Please select a category';
-      valid = false;
     }
     
     const totalMinutes = (parseInt(formData.hours) || 0) * 60 + (parseInt(formData.minutes) || 0);
     if (totalMinutes <= 0) {
       errors.time = 'Please enter a valid time (at least 1 minute)';
-      valid = false;
     }
     
     setFormErrors(errors);
-    return valid;
+    return Object.keys(errors).length === 0;
   };
-
+  
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -137,56 +108,62 @@ const TimeEntryForm = ({ categories, onSuccess, compact = false }) => {
       return;
     }
     
-    setIsLoading(true);
-    setError(null);
-    setSuccessMessage(null);
-    
     try {
+      setIsSubmitting(true);
+      setSubmitMessage(null);
+      
       // Calculate total minutes
       const totalMinutes = (parseInt(formData.hours) || 0) * 60 + (parseInt(formData.minutes) || 0);
       
-      // Send data to API
-      await axios.post(`${API_URL}/logs`, {
-        category_id: formData.categoryId,
+      // Prepare data for submission
+      const timeLogData = {
+        category_id: parseInt(formData.categoryId),
         date: formData.date,
         total_time: totalMinutes,
         notes: formData.notes.trim() || null
-      });
+      };
+      
+      // Send data to API
+      const result = await saveLog(timeLogData);
       
       // Show success message
-      setSuccessMessage('Time entry saved successfully!');
+      setSubmitStatus('success');
+      setSubmitMessage(result.created 
+        ? 'Time entry created successfully!' 
+        : 'Time entry updated successfully!');
       
-      // Reset form after successful submission
+      // Reset form fields except date and category
       setFormData({
-        date: formData.date, // Keep the same date for quick consecutive entries
-        categoryId: formData.categoryId, // Keep the same category for quick entries
+        date: formData.date, // Keep the date for consecutive entries
+        categoryId: formData.categoryId, // Keep the category for consecutive entries
         hours: 0,
         minutes: 0,
         notes: ''
       });
       
-      // Notify parent component about the success
+      // Notify parent component
       if (onSuccess) {
-        onSuccess();
+        onSuccess(result);
       }
       
-      // Hide success message after a delay
+      // Auto-hide success message after a delay
       setTimeout(() => {
-        setSuccessMessage(null);
-      }, 3000);
+        setSubmitMessage(null);
+        setSubmitStatus(null);
+      }, 5000);
     } catch (err) {
       console.error('Error saving time entry:', err);
       
-      if (err.response && err.response.data && err.response.data.error) {
-        setError(err.response.data.error);
-      } else {
-        setError('Failed to save time entry. Please try again.');
-      }
+      // Show error message
+      setSubmitStatus('error');
+      setSubmitMessage(
+        err.message || 'Failed to save time entry. Please try again.'
+      );
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
-
+  
   // Group categories by parent for display
   const groupCategoriesByParent = () => {
     const parentCategories = categories.filter(category => !category.parent_id);
@@ -203,209 +180,167 @@ const TimeEntryForm = ({ categories, onSuccess, compact = false }) => {
     
     return { parentCategories, childrenMap };
   };
-
-  // Render the component with appropriate styling based on compact mode
+  
+  const { parentCategories, childrenMap } = groupCategoriesByParent();
+  
   return (
-    <div className={compact ? "" : "card"}>
-      {compact ? (
-        <div className="sidebar-section-header">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="sidebar-heading m-0">Log Your Time</h2>
-            <button
-              onClick={toggleForm}
-              className={`btn btn-sm ${formVisible ? 'btn-outline' : 'btn-primary'}`}
-            >
-              {formVisible ? 'Hide Form' : 'Add Entry'}
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div className="card-header">
-          <div className="flex justify-between items-center">
-            <h2 className="card-title">Log Your Time</h2>
-            <button
-              onClick={toggleForm}
-              className={`btn btn-sm ${formVisible ? 'btn-outline' : 'btn-primary'}`}
-            >
-              {formVisible ? 'Hide Form' : 'Add Time Entry'}
-            </button>
-          </div>
-        </div>
+    <div className={`time-entry-form ${compact ? 'compact' : ''}`}>
+      {submitMessage && (
+        <Alert 
+          type={submitStatus} 
+          message={submitMessage} 
+          onDismiss={() => {
+            setSubmitMessage(null);
+            setSubmitStatus(null);
+          }}
+          className="mb-4"
+        />
       )}
       
-      {formVisible && (
-        <div className={compact ? "" : "card-content"}>
-          {error && (
-            <div className="alert alert-error mb-4">
-              <div className="alert-content">
-                <p>{error}</p>
-              </div>
-              <button 
-                className="alert-dismiss"
-                onClick={() => setError(null)}
-              >
-                &times;
-              </button>
-            </div>
-          )}
+      <form onSubmit={handleSubmit} className={isSubmitting ? 'form-loading' : ''}>
+        <div className="time-fields-grid">
+          {/* Date Selection */}
+          <div className="form-group">
+            <label className="form-label" htmlFor="date">
+              Date
+            </label>
+            <input
+              type="date"
+              id="date"
+              name="date"
+              value={formData.date}
+              onChange={handleInputChange}
+              className={`form-input ${formErrors.date ? 'form-input-error' : ''}`}
+              max={format(new Date(), 'yyyy-MM-dd')}
+            />
+            {formErrors.date && (
+              <p className="form-error-text">{formErrors.date}</p>
+            )}
+          </div>
           
-          {successMessage && (
-            <div className="alert alert-success mb-4">
-              <div className="alert-content">
-                <p>{successMessage}</p>
-              </div>
-              <button 
-                className="alert-dismiss"
-                onClick={() => setSuccessMessage(null)}
-              >
-                &times;
-              </button>
-            </div>
-          )}
+          {/* Category Selection */}
+          <div className="form-group">
+            <label className="form-label" htmlFor="categoryId">
+              Category
+            </label>
+            <select
+              id="categoryId"
+              name="categoryId"
+              value={formData.categoryId}
+              onChange={handleInputChange}
+              className={`form-input ${formErrors.categoryId ? 'form-input-error' : ''}`}
+            >
+              <option value="">Select a category</option>
+              
+              {/* Render categories with option groups */}
+              {parentCategories.map(parent => {
+                const children = childrenMap[parent.id] || [];
+                
+                if (children.length === 0) {
+                  return (
+                    <option key={parent.id} value={parent.id}>
+                      {parent.name}
+                    </option>
+                  );
+                }
+                
+                return (
+                  <optgroup key={parent.id} label={parent.name}>
+                    <option value={parent.id}>
+                      {parent.name} (General)
+                    </option>
+                    
+                    {children.map(child => (
+                      <option key={child.id} value={child.id}>
+                        {child.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                );
+              })}
+            </select>
+            {formErrors.categoryId && (
+              <p className="form-error-text">{formErrors.categoryId}</p>
+            )}
+          </div>
           
-          <form onSubmit={handleSubmit} className={`${isLoading ? 'form-loading' : ''}`}>
-            <div className={`${compact ? "space-y-3" : "grid grid-cols-1 md:grid-cols-2 gap-4 mb-4"}`}>
-              {/* Date Selection */}
-              <div className="form-group mb-3">
-                <label className="form-label text-sm">
-                  Date
-                </label>
+          {/* Time Entry */}
+          <div className="form-group">
+            <label className="form-label">
+              Time Spent
+            </label>
+            <div className="time-inputs">
+              <div className="time-input-group">
                 <input
-                  type="date"
-                  name="date"
-                  value={formData.date}
+                  type="number"
+                  name="hours"
+                  value={formData.hours}
                   onChange={handleInputChange}
-                  className={`form-input ${formErrors.date ? 'border-red-500' : ''}`}
-                  max={format(new Date(), 'yyyy-MM-dd')}
+                  min="0"
+                  placeholder="0"
+                  className={`form-input ${formErrors.time ? 'form-input-error' : ''}`}
                 />
-                {formErrors.date && (
-                  <p className="form-error">{formErrors.date}</p>
-                )}
+                <span className="time-label">Hours</span>
               </div>
               
-              {/* Category Selection */}
-              <div className="form-group mb-3">
-                <label className="form-label text-sm">
-                  Category
-                </label>
-                <select
-                  name="categoryId"
-                  value={formData.categoryId}
+              <div className="time-input-group">
+                <input
+                  type="number"
+                  name="minutes"
+                  value={formData.minutes}
                   onChange={handleInputChange}
-                  className={`form-select ${formErrors.categoryId ? 'border-red-500' : ''}`}
-                >
-                  <option value="">Select a category</option>
-                  
-                  {/* Render categories with option groups */}
-                  {(() => {
-                    const { parentCategories, childrenMap } = groupCategoriesByParent();
-                    
-                    return parentCategories.map(parent => {
-                      const children = childrenMap[parent.id] || [];
-                      
-                      if (children.length === 0) {
-                        return (
-                          <option key={parent.id} value={parent.id}>
-                            {parent.name}
-                          </option>
-                        );
-                      }
-                      
-                      return (
-                        <optgroup key={parent.id} label={parent.name}>
-                          <option value={parent.id}>
-                            {parent.name} (General)
-                          </option>
-                          
-                          {children.map(child => (
-                            <option key={child.id} value={child.id}>
-                              {child.name}
-                            </option>
-                          ))}
-                        </optgroup>
-                      );
-                    });
-                  })()}
-                </select>
-                {formErrors.categoryId && (
-                  <p className="form-error">{formErrors.categoryId}</p>
-                )}
+                  min="0"
+                  max="59"
+                  placeholder="0"
+                  className={`form-input ${formErrors.time ? 'form-input-error' : ''}`}
+                />
+                <span className="time-label">Minutes</span>
               </div>
             </div>
-            
-            {/* Time Entry */}
-            <div className="form-group mb-3">
-              <label className="form-label text-sm">
-                Time Spent
-              </label>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <div className="input-group">
-                    <div className="input-group-prepend">
-                      <span className="input-group-text">Hours</span>
-                    </div>
-                    <input
-                      type="number"
-                      name="hours"
-                      value={formData.hours}
-                      onChange={handleInputChange}
-                      min="0"
-                      className={`form-input ${formErrors.time ? 'border-red-500' : ''}`}
-                    />
-                  </div>
-                </div>
-                <div>
-                  <div className="input-group">
-                    <div className="input-group-prepend">
-                      <span className="input-group-text">Minutes</span>
-                    </div>
-                    <input
-                      type="number"
-                      name="minutes"
-                      value={formData.minutes}
-                      onChange={handleInputChange}
-                      min="0"
-                      max="59"
-                      className={`form-input ${formErrors.time ? 'border-red-500' : ''}`}
-                    />
-                  </div>
-                </div>
-              </div>
-              {formErrors.time && (
-                <p className="form-error">{formErrors.time}</p>
-              )}
-            </div>
-            
-            {/* Notes - Hide in compact mode */}
-            {!compact && (
-              <div className="form-group mb-4">
-                <label className="form-label">
-                  Notes (Optional)
-                </label>
-                <textarea
-                  name="notes"
-                  value={formData.notes}
-                  onChange={handleInputChange}
-                  rows="3"
-                  className="form-textarea"
-                  placeholder="Add any notes about this time entry"
-                ></textarea>
-              </div>
+            {formErrors.time && (
+              <p className="form-error-text">{formErrors.time}</p>
             )}
-            
-            {/* Submit Button */}
-            <div className={compact ? "" : "flex justify-end"}>
-              <button
-                type="submit"
-                disabled={isLoading}
-                className={`btn ${compact ? 'w-full' : ''} btn-primary`}
-              >
-                {isLoading ? 'Saving...' : 'Save Time Entry'}
-              </button>
-            </div>
-          </form>
+          </div>
         </div>
-      )}
+        
+        {/* Notes - Hide in compact mode */}
+        {!compact && (
+          <div className="form-group mt-4">
+            <label className="form-label" htmlFor="notes">
+              Notes (Optional)
+            </label>
+            <textarea
+              id="notes"
+              name="notes"
+              value={formData.notes}
+              onChange={handleInputChange}
+              rows="3"
+              className="form-input form-textarea"
+              placeholder="Add any notes about this time entry"
+            ></textarea>
+          </div>
+        )}
+        
+        {/* Submit Button */}
+        <div className={`form-actions ${compact ? '' : 'text-right'}`}>
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className={`btn-primary ${compact ? 'btn-full-width' : ''}`}
+          >
+            {isSubmitting ? (
+              <>
+                <svg className="spinner-inline" viewBox="0 0 24 24">
+                  <circle className="spinner-circle" cx="12" cy="12" r="10" fill="none" strokeWidth="3" />
+                </svg>
+                Saving...
+              </>
+            ) : (
+              'Save Time Entry'
+            )}
+          </button>
+        </div>
+      </form>
     </div>
   );
 };

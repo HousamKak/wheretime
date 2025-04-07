@@ -1,4 +1,4 @@
-/* Modal component styles - Fixed for full chart display */
+/* Modal styles */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -9,23 +9,34 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 50;
+  z-index: 1000;
   padding: 1rem;
+  animation: fadeIn 0.2s ease-out;
 }
 
-.modal {
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.modal-container {
   background-color: white;
   border-radius: 0.5rem;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   width: 100%;
-  height: 90vh; /* Fixed height instead of max-height */
+  max-width: 32rem;
+  max-height: 90vh;
   display: flex;
   flex-direction: column;
-  animation: modal-appear 0.2s ease-out;
+  animation: modalAppear 0.3s ease-out;
   overflow: hidden;
 }
 
-@keyframes modal-appear {
+@keyframes modalAppear {
   from {
     opacity: 0;
     transform: scale(0.95);
@@ -36,26 +47,16 @@
   }
 }
 
-/* Modal sizes */
-.modal-sm { max-width: 28rem; }
-.modal-md { max-width: 32rem; }
-.modal-lg { max-width: 48rem; }
-.modal-xl { max-width: 90%; }
-.modal-2xl { max-width: 72rem; }
-.modal-full { max-width: 100%; height: 100%; margin: 0; border-radius: 0; }
-
-/* Modal header */
 .modal-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.75rem 1rem;
+  padding: 1rem 1.5rem;
   border-bottom: 1px solid #e5e7eb;
   background-color: #f9fafb;
-  flex-shrink: 0; /* Prevent header from shrinking */
 }
 
-.modal-title {
+.modal-header h2 {
   font-size: 1.25rem;
   font-weight: 600;
   color: #111827;
@@ -63,18 +64,17 @@
 }
 
 .modal-close-btn {
-  background: none;
-  border: none;
-  color: #6b7280;
-  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   width: 2rem;
   height: 2rem;
+  background: none;
+  border: none;
   border-radius: 9999px;
-  transition: background-color 0.2s, color 0.2s;
-  flex-shrink: 0;
+  color: #6b7280;
+  cursor: pointer;
+  transition: background-color 0.2s;
 }
 
 .modal-close-btn:hover {
@@ -82,80 +82,292 @@
   color: #111827;
 }
 
-/* Modal body */
-.modal-body {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  min-height: 0; /* Critical for flex children */
+.modal-form {
+  padding: 1.5rem;
+  overflow-y: auto;
 }
 
-/* Modal content for category charts - specific fixes */
-.cc-modal-chart-container {
-  display: flex;
-  flex-direction: column;
-  padding: 1rem;
-  flex: 1;
-  min-height: 0; /* Critical for flex children */
-  height: calc(90vh - 4rem); /* Simplified height calculation - just subtract header height */
+.form-group {
+  margin-bottom: 1.25rem;
 }
 
-/* Subcategory controls */
-.cc-subcategory-controls {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  padding: 0.75rem 1rem;
-  background-color: #f9fafb;
+.form-group label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 0.5rem;
+}
+
+.form-input {
+  width: 100%;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid #d1d5db;
   border-radius: 0.375rem;
-  margin-bottom: 1rem;
-  align-items: center;
-  flex-shrink: 0; /* Prevent controls from shrinking */
-}
-
-.cc-subcategory-controls-title {
-  font-weight: 600;
+  font-size: 0.875rem;
   color: #111827;
-  margin-right: 0.5rem;
+  background-color: white;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-.cc-subcategory-control-item {
+.form-input:focus {
+  outline: none;
+  border-color: #4361ee;
+  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1);
+}
+
+.form-input.error {
+  border-color: #ef4444;
+}
+
+.form-error {
+  margin-top: 0.375rem;
+  font-size: 0.75rem;
+  color: #ef4444;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #e5e7eb;
+  background-color: #f9fafb;
+}
+
+.cancel-btn {
+  padding: 0.5rem 1rem;
+  background-color: white;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.cancel-btn:hover {
+  background-color: #f3f4f6;
+  border-color: #9ca3af;
+}
+
+.submit-btn {
   display: flex;
   align-items: center;
-  gap: 0.25rem;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background-color: #4361ee;
+  color: white;
+  border: none;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
 }
 
-.cc-subcategory-control-item input[type="checkbox"] {
+.submit-btn:hover {
+  background-color: #3a56d4;
+}
+
+.submit-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Color picker styles */
+.color-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.predefined-colors {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.5rem;
+}
+
+.color-option {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 0.375rem;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.color-option:hover {
+  transform: scale(1.1);
+}
+
+.color-option.selected {
+  border-color: #111827;
+  transform: scale(1.1);
+}
+
+.custom-color {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.color-input {
+  width: 3rem;
+  height: 3rem;
+  padding: 0;
+  border: none;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.color-text-input {
+  flex: 1;
+}
+
+/* Loading spinner for buttons */
+.spinner {
+  animation: spin 1s linear infinite;
   width: 1rem;
   height: 1rem;
 }
 
-.cc-subcategory-control-item label {
+.spinner-circle {
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-dasharray: 60, 200;
+  stroke-dashoffset: 0;
+  animation: dash 1.5s ease-in-out infinite;
+}
+
+@keyframes spin {
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes dash {
+  0% {
+    stroke-dasharray: 1, 200;
+    stroke-dashoffset: 0;
+  }
+  50% {
+    stroke-dasharray: 89, 200;
+    stroke-dashoffset: -35;
+  }
+  100% {
+    stroke-dasharray: 89, 200;
+    stroke-dashoffset: -124;
+  }
+}
+
+/* Delete confirmation dialog */
+.delete-confirmation-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
-  font-size: 0.875rem;
-  cursor: pointer;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+  animation: fadeIn 0.2s ease-out;
 }
 
-.cc-subcategory-color {
-  width: 0.625rem;
-  height: 0.625rem;
-  border-radius: 50%;
-  margin-right: 0.25rem;
-}
-
-/* Make sure the chart takes all remaining space */
-.cc-modal-chart {
-  flex: 1;
-  position: relative;
-  min-height: 0; /* Critical for flex children */
-  display: flex;
-  height: 100%; /* Ensure it takes full height */
-}
-
-/* Ensure the chart SVG takes full size */
-.cc-modal-chart > div {
+.delete-confirmation-dialog {
+  background-color: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   width: 100%;
-  height: 100%;
+  max-width: 28rem;
+  display: flex;
+  flex-direction: column;
+  animation: modalAppear 0.3s ease-out;
+  overflow: hidden;
+}
+
+.delete-confirmation-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #fee2e2;
+  background-color: #fef2f2;
+  color: #b91c1c;
+}
+
+.delete-confirmation-header h2 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.delete-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  color: #ef4444;
+}
+
+.delete-confirmation-content {
+  padding: 1.5rem;
+}
+
+.delete-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin: 1rem 0;
+  padding: 0.75rem;
+  background-color: #fff7ed;
+  border: 1px solid #ffedd5;
+  border-radius: 0.375rem;
+  color: #c2410c;
+}
+
+.warning-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #f59e0b;
+  flex-shrink: 0;
+}
+
+.delete-confirmation-note {
+  margin-top: 1rem;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.delete-confirmation-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #e5e7eb;
+  background-color: #f9fafb;
+}
+
+.delete-btn {
+  padding: 0.5rem 1rem;
+  background-color: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.delete-btn:hover {
+  background-color: #dc2626;
+}
+
+.delete-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
