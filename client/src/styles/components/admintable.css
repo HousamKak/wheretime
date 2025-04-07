@@ -1,4 +1,4 @@
-/* Admin Table Styles */
+/* Admin Table Styles with improved buttons */
 .admin-table-container {
   background-color: white;
   border-radius: 0.5rem;
@@ -96,33 +96,45 @@
   gap: 0.5rem;
 }
 
+/* Improved action buttons */
 .admin-table-action-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 4px;
-  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 0.375rem;
+  border: 1px solid transparent;
   cursor: pointer;
-  background-color: transparent;
-  transition: background-color 0.2s ease;
+  background-color: #f3f4f6;
+  transition: all 0.2s ease;
+  color: #4b5563;
 }
 
 .admin-table-edit-btn {
+  background-color: #eef1ff;
   color: #4361ee;
+  border-color: #dbeafe;
 }
 
 .admin-table-edit-btn:hover {
-  background-color: rgba(67, 97, 238, 0.1);
+  background-color: #dbeafe;
+  color: #3a56d4;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .admin-table-delete-btn {
+  background-color: #fee2e2;
   color: #ef4444;
+  border-color: #fecaca;
 }
 
 .admin-table-delete-btn:hover {
-  background-color: rgba(239, 68, 68, 0.1);
+  background-color: #fecaca;
+  color: #dc2626;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .admin-table-no-data {
@@ -169,6 +181,7 @@
   border: 1px solid #d1d5db;
   border-radius: 0.25rem;
   background-color: white;
+  height: 32px; /* Fixed height for alignment */
 }
 
 .admin-table-pages {
@@ -186,11 +199,16 @@
   font-size: 0.875rem;
   cursor: pointer;
   transition: all 0.2s ease;
+  height: 32px; /* Fixed height for alignment */
+  display: flex;
+  align-items: center;
 }
 
 .admin-table-page-nav:hover:not(:disabled) {
   background-color: #f3f4f6;
   border-color: #9ca3af;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .admin-table-page-nav:disabled {
@@ -214,11 +232,17 @@
   cursor: pointer;
   min-width: 2rem;
   text-align: center;
+  height: 32px; /* Fixed height for alignment */
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .admin-table-page-button:hover {
   background-color: #f3f4f6;
   border-color: #9ca3af;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .admin-table-page-button.active {
@@ -238,11 +262,13 @@
     flex-direction: column;
     align-items: flex-start;
   }
-  
+
   .admin-table-pagination-controls {
-    width: 100%;
-    flex-direction: column;
-    align-items: flex-start;
-    margin-top: 0.5rem;
+     {
+      width: 100%;
+      flex-direction: column;
+      align-items: flex-start;
+      margin-top: 0.5rem;
+    }
   }
 }
