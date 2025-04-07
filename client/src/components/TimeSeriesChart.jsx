@@ -192,42 +192,13 @@ const TimeSeriesChart = ({ data, categories, categoryVisibility, expandedCategor
       // Process visible categories for the chart
       visibleCategories.forEach(category => {
         const isParent = categoryHierarchy.rootCategories.some(root => root.id === category.id);
-        const isExpanded = isParent && expandedCategories[category.id];
-        
-        // Skip rendering children if their parent is visible but not expanded
-        if (category.parent_id) {
-          const parent = categoryHierarchy.categoryMap[category.parent_id];
-          if (parent && categoryVisibility[parent.id] !== false && !expandedCategories[parent.id]) {
-            return;
-          }
-        }
 
         // Prepare the time series data for this category
         const categoryKey = `category_${category.id}`;
-        const seriesData = formattedData.map(day => {
-          let value = day[categoryKey] || 0;
-          
-          // For parent categories with expanded state to show aggregation
-          if (isParent && isExpanded) {
-            // Get all subcategories of this parent
-            const childrenIds = categoryHierarchy.categoryMap[category.id].children.map(child => child.id);
-            
-            // Filter to only include subcategories that are currently visible/selected
-            const visibleChildren = childrenIds.filter(id => categoryVisibility[id] !== false);
-            
-            if (visibleChildren.length > 0) {
-              // Sum up only the selected subcategories
-              value = visibleChildren.reduce((sum, childId) => {
-                return sum + (day[`category_${childId}`] || 0);
-              }, 0);
-            }
-          }
-          
-          return {
-            date: day.date,
-            value: value
-          };
-        });
+        const seriesData = formattedData.map(day => ({
+          date: day.date,
+          value: day[categoryKey] || 0
+        }));
 
         // Update max Y value
         const categoryMax = d3.max(seriesData, d => d.value);
@@ -241,8 +212,53 @@ const TimeSeriesChart = ({ data, categories, categoryVisibility, expandedCategor
           color: category.color,
           data: seriesData,
           isParent,
-          isExpanded
+          isAggregation: false
         });
+      });
+
+      visibleCategories.forEach(category => {
+        // Only process root categories with expanded state
+        const isParent = categoryHierarchy.rootCategories.some(root => root.id === category.id);
+        const isExpanded = isParent && expandedCategories[category.id];
+
+        if (isParent && isExpanded) {
+          // Get all subcategories of this parent
+          const childrenIds = categoryHierarchy.categoryMap[category.id].children.map(child => child.id);
+
+          // Filter to only include subcategories that are currently visible/selected
+          const visibleChildren = childrenIds.filter(id => categoryVisibility[id] !== false);
+
+          if (visibleChildren.length > 0) {
+            // Create aggregation data series
+            const aggSeriesData = formattedData.map(day => {
+              // Sum up only the selected subcategories
+              const total = visibleChildren.reduce((sum, childId) => {
+                return sum + (day[`category_${childId}`] || 0);
+              }, 0);
+
+              return {
+                date: day.date,
+                value: total
+              };
+            });
+
+            // Update max Y value if needed
+            const aggMax = d3.max(aggSeriesData, d => d.value);
+            if (aggMax > maxY) {
+              maxY = aggMax;
+            }
+
+            // Add this as a special aggregation series
+            processedCategories.push({
+              id: `agg_${category.id}`,
+              name: `${category.name} (Sum)`,
+              color: category.color, // Use same color but we'll make it thicker/dashed
+              data: aggSeriesData,
+              isParent: false,
+              isAggregation: true
+            });
+          }
+        }
       });
 
       // Create Y scale based on max value
@@ -353,19 +369,22 @@ const TimeSeriesChart = ({ data, categories, categoryVisibility, expandedCategor
 
       // Add series for each processed category
       processedCategories.forEach((category, index) => {
-        // Add area
-        svg.append('path')
-          .datum(category.data)
-          .attr('fill', category.color || '#ccc')
-          .attr('fill-opacity', 0.3) // Use consistent opacity for areas
-          .attr('d', areaGenerator);
+        // Add area (only for non-aggregation series)
+        if (!category.isAggregation) {
+          svg.append('path')
+            .datum(category.data)
+            .attr('fill', category.color || '#ccc')
+            .attr('fill-opacity', 0.3)
+            .attr('d', areaGenerator);
+        }
 
-        // Add line
+        // Add line with different styling for aggregation vs regular series
         svg.append('path')
           .datum(category.data)
           .attr('fill', 'none')
           .attr('stroke', category.color || '#ccc')
-          .attr('stroke-width', 2)
+          .attr('stroke-width', category.isAggregation ? 3 : 2) // Thicker line for aggregation
+          .attr('stroke-dasharray', category.isAggregation ? '6,3' : null) // Dashed line for aggregation
           .attr('d', lineGenerator);
       });
 
@@ -425,10 +444,10 @@ const TimeSeriesChart = ({ data, categories, categoryVisibility, expandedCategor
 
               // Show values for each visible category
               processedCategories.forEach(category => {
-                const dateValue = category.data.find(item => 
+                const dateValue = category.data.find(item =>
                   item.date.getTime() === d.date.getTime()
                 );
-                
+
                 if (dateValue && dateValue.value > 0) {
                   tooltipContent += `
                     <div style="display: flex; justify-content: space-between; margin-bottom: 4px; align-items: center;">
@@ -444,7 +463,7 @@ const TimeSeriesChart = ({ data, categories, categoryVisibility, expandedCategor
 
               // Calculate total time for this date
               const totalValue = processedCategories.reduce((total, category) => {
-                const dateValue = category.data.find(item => 
+                const dateValue = category.data.find(item =>
                   item.date.getTime() === d.date.getTime()
                 );
                 return total + (dateValue ? dateValue.value : 0);
