@@ -124,3 +124,106 @@
   .color-picker-custom {
     margin-top: 0.5rem;
   }
+
+  /* Expandable categories styles */
+.expand-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  background-color: transparent;
+  border: none;
+  color: #6b7280;
+  cursor: pointer;
+  margin-right: 0.5rem;
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.expand-toggle-btn:hover {
+  color: #4361ee;
+}
+
+.expand-toggle-btn.expanded {
+  transform: rotate(90deg);
+  color: #4361ee;
+}
+
+.subcategory-indent {
+  display: inline-block;
+  width: 20px;
+  margin-right: 0.5rem;
+}
+
+/* Expand/collapse all controls */
+.expand-collapse-controls {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.expand-all-btn,
+.collapse-all-btn {
+  font-size: 0.875rem;
+  padding: 0.375rem 0.75rem;
+  border-radius: 0.375rem;
+  border: 1px solid #d1d5db;
+  background-color: white;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.expand-all-btn:hover,
+.collapse-all-btn:hover {
+  background-color: #f3f4f6;
+  border-color: #9ca3af;
+}
+
+.expand-all-btn:disabled,
+.collapse-all-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Animation for expanding/collapsing */
+.admin-table tr {
+  transition: opacity 0.2s ease, max-height 0.2s ease;
+}
+
+/* Update to category name cell for better alignment */
+.category-name-cell {
+  display: flex;
+  align-items: center;
+}
+
+.category-indent {
+  display: flex;
+  align-items: center;
+}
+
+/* Increase spacing for hierarchical view */
+.admin-table td {
+  padding: 0.875rem 1rem;
+}
+
+/* Highlight parent categories */
+.admin-table tr.parent-category td {
+  background-color: #f9fafb;
+  font-weight: 500;
+}
+
+/* Styling for subcategories */
+.admin-table tr.subcategory td {
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+}
+
+/* Category color indicator */
+.category-color-dot {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-right: 0.625rem;
+}

@@ -19,9 +19,38 @@ const CategoriesPage = () => {
   const [selectedRows, setSelectedRows] = useState([]);
   const [confirmDelete, setConfirmDelete] = useState(null);
   
+  // State to track expanded categories
+  const [expandedCategories, setExpandedCategories] = useState({});
+  
   // Filtering state
   const [filters, setFilters] = useState({});
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // Build category hierarchy maps
+  const categoryMaps = useMemo(() => {
+    const childrenMap = {};
+    const parentsMap = {};
+
+    categories.forEach(cat => {
+      if (cat.parent_id) {
+        if (!childrenMap[cat.parent_id]) {
+          childrenMap[cat.parent_id] = [];
+        }
+        childrenMap[cat.parent_id].push(cat.id);
+        parentsMap[cat.id] = cat.parent_id;
+      }
+    });
+
+    return { childrenMap, parentsMap };
+  }, [categories]);
+  
+  // Toggle category expansion
+  const toggleCategoryExpansion = (categoryId) => {
+    setExpandedCategories(prev => ({
+      ...prev,
+      [categoryId]: !prev[categoryId]
+    }));
+  };
   
   // Calculate hierarchy level
   const getHierarchyLevel = (categoryId, parentsMap) => {
@@ -36,56 +65,100 @@ const CategoriesPage = () => {
     return level;
   };
 
-  // Process categories for display when filters change
+  // Process categories for display with expandable rows
   const displayCategories = useMemo(() => {
-    // Build a map of parent-child relationships
-    const childrenMap = {};
-    const parentsMap = {};
-
-    categories.forEach(cat => {
-      if (cat.parent_id) {
-        if (!childrenMap[cat.parent_id]) {
-          childrenMap[cat.parent_id] = [];
-        }
-        childrenMap[cat.parent_id].push(cat.id);
-        parentsMap[cat.id] = cat.parent_id;
-      }
-    });
-
-    // Build a flat list for the table with hierarchy information
-    let result = categories.map(category => {
+    const { childrenMap, parentsMap } = categoryMaps;
+    
+    // First, gather all root categories
+    let rootCategories = categories.filter(cat => !cat.parent_id).map(category => {
       const hasChildren = childrenMap[category.id] && childrenMap[category.id].length > 0;
-      const level = getHierarchyLevel(category.id, parentsMap);
-
       return {
         ...category,
-        level,
+        level: 0,
         hasChildren
       };
     });
-
-    // Apply any filtering
-    if (filters.parent_id) {
-      if (filters.parent_id === 'root') {
-        // Show only root categories
-        result = result.filter(cat => !cat.parent_id);
-      } else {
-        // Show children of the specified parent
-        const parentId = parseInt(filters.parent_id);
-        result = result.filter(cat => cat.parent_id === parentId);
-      }
+    
+    // Apply filtering to root categories
+    if (filters.parent_id === 'root') {
+      // Already showing only root categories
+    } else if (filters.parent_id) {
+      // Show only children of the specified parent
+      const parentId = parseInt(filters.parent_id);
+      rootCategories = categories
+        .filter(cat => cat.parent_id === parentId)
+        .map(category => ({
+          ...category,
+          level: 1,
+          hasChildren: childrenMap[category.id] && childrenMap[category.id].length > 0
+        }));
     }
-
-    // Apply search term
+    
+    // Apply search term to root categories
     if (searchTerm) {
       const search = searchTerm.toLowerCase();
-      result = result.filter(cat => 
-        cat.name.toLowerCase().includes(search)
+      
+      // For search, we want to include both matching categories and their parents/children
+      const matchingCategoryIds = new Set();
+      const matchingWithParentsIds = new Set();
+      
+      // Find all categories that match the search
+      categories.forEach(cat => {
+        if (cat.name.toLowerCase().includes(search)) {
+          matchingCategoryIds.add(cat.id);
+          
+          // Also include all parent categories
+          let parentId = cat.parent_id;
+          while (parentId) {
+            matchingWithParentsIds.add(parentId);
+            parentId = parentsMap[parentId];
+          }
+        }
+      });
+      
+      // Filter root categories to those matching or with matching children
+      rootCategories = rootCategories.filter(cat => 
+        matchingCategoryIds.has(cat.id) || matchingWithParentsIds.has(cat.id)
       );
     }
-
+    
+    // Now we have our filtered root categories, let's add children for expanded categories
+    const result = [];
+    
+    const addCategoryWithChildren = (category) => {
+      result.push(category);
+      
+      // If this category is expanded and has children, add them too
+      if (expandedCategories[category.id] && childrenMap[category.id]) {
+        const children = childrenMap[category.id]
+          .map(childId => categories.find(c => c.id === childId))
+          .filter(Boolean) // Remove any undefined values
+          .map(child => ({
+            ...child,
+            level: category.level + 1,
+            hasChildren: childrenMap[child.id] && childrenMap[child.id].length > 0
+          }));
+        
+        // Sort children by name
+        children.sort((a, b) => a.name.localeCompare(b.name));
+        
+        // For each child, add it and potentially its children
+        children.forEach(child => {
+          addCategoryWithChildren(child);
+        });
+      }
+    };
+    
+    // Sort root categories by name
+    rootCategories.sort((a, b) => a.name.localeCompare(b.name));
+    
+    // Add each root category and its children if expanded
+    rootCategories.forEach(category => {
+      addCategoryWithChildren(category);
+    });
+    
     return result;
-  }, [categories, filters, searchTerm]);
+  }, [categories, expandedCategories, filters, searchTerm, categoryMaps]);
   
   // Table columns configuration
   const columns = [
@@ -99,10 +172,22 @@ const CategoriesPage = () => {
             className="category-indent"
             style={{ paddingLeft: `${row.level * 1.5}rem` }}
           >
-            {row.level > 0 && (
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="category-branch-icon">
-                <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
-              </svg>
+            {row.hasChildren && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleCategoryExpansion(row.id);
+                }}
+                className={`expand-toggle-btn ${expandedCategories[row.id] ? 'expanded' : ''}`}
+                title={expandedCategories[row.id] ? "Collapse" : "Expand"}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
+                  <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
+                </svg>
+              </button>
+            )}
+            {!row.hasChildren && row.level > 0 && (
+              <span className="subcategory-indent"></span>
             )}
             <span 
               className="category-color-dot"
@@ -174,17 +259,32 @@ const CategoriesPage = () => {
   // Handle filter changes
   const handleFilterChange = (newFilters) => {
     setFilters(newFilters);
+    // Reset expanded categories when filters change
+    setExpandedCategories({});
   };
   
   // Handle search
   const handleSearch = (term) => {
     setSearchTerm(term);
+    // When searching, expand all categories for better visibility
+    if (term) {
+      const expanded = {};
+      categories.forEach(cat => {
+        if (!cat.parent_id) {
+          expanded[cat.id] = true;
+        }
+      });
+      setExpandedCategories(expanded);
+    } else {
+      setExpandedCategories({});
+    }
   };
   
   // Reset filters and search
   const handleResetFilters = () => {
     setFilters({});
     setSearchTerm('');
+    setExpandedCategories({});
   };
   
   // Handle bulk actions
@@ -289,6 +389,22 @@ const CategoriesPage = () => {
       return () => clearTimeout(timer);
     }
   }, [success]);
+
+  // Expand all categories with one click
+  const expandAllCategories = () => {
+    const expanded = {};
+    categories.forEach(cat => {
+      if (categoryMaps.childrenMap[cat.id] && categoryMaps.childrenMap[cat.id].length > 0) {
+        expanded[cat.id] = true;
+      }
+    });
+    setExpandedCategories(expanded);
+  };
+
+  // Collapse all categories with one click
+  const collapseAllCategories = () => {
+    setExpandedCategories({});
+  };
   
   return (
     <div className="admin-page categories-admin-page">
@@ -329,6 +445,24 @@ const CategoriesPage = () => {
         bulkActions={bulkActions}
         onBulkActionClick={handleBulkAction}
       />
+      
+      {/* Expand/Collapse All buttons */}
+      <div className="expand-collapse-controls">
+        <button 
+          onClick={expandAllCategories}
+          className="expand-all-btn"
+          disabled={loading}
+        >
+          Expand All
+        </button>
+        <button 
+          onClick={collapseAllCategories}
+          className="collapse-all-btn"
+          disabled={loading}
+        >
+          Collapse All
+        </button>
+      </div>
       
       {/* Categories table */}
       <AdminTable 
