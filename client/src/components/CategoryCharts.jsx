@@ -32,13 +32,13 @@ const CategoryCharts = ({
 
     // Handle expand chart to modal
     const handleExpandChart = (category) => {
-        // Initialize modal visibility with all subcategories visible
+        // Initialize modal visibility with current category visibility
         const initialModalVisibility = {...categoryVisibility};
         
         // Get all subcategories
         const subcategories = getChildCategories(category.id);
         
-        // Make sure the category and all its subcategories are visible by default
+        // Make sure the category and all its subcategories are visible by default in the modal
         initialModalVisibility[category.id] = true;
         subcategories.forEach(sub => {
             initialModalVisibility[sub.id] = true;
@@ -182,7 +182,20 @@ const CategoryCharts = ({
         // Calculate total time for this category and its children
         const categoryTotal = data.reduce((sum, day) => {
             const key = `category_${selectedCategory.id}`;
-            return sum + (day[key] || 0);
+            
+            // Handle different data structures
+            let dayValue = 0;
+            if (day[key] && typeof day[key] === 'object' && day[key].value !== undefined) {
+                dayValue = day[key].value;
+            } else if (day[key] && typeof day[key] === 'number') {
+                dayValue = day[key];
+            } else if (day[key] && day[key].y1 !== undefined && day[key].y0 !== undefined) {
+                dayValue = day[key].y1 - day[key].y0;
+            } else {
+                dayValue = day[key] || 0;
+            }
+            
+            return sum + dayValue;
         }, 0);
 
         // Create a unique ID for the modal chart
@@ -195,27 +208,54 @@ const CategoryCharts = ({
                 title={`${selectedCategory.name} - ${formatTime(categoryTotal)}`}
                 size="xl"
             >
-                <div className="cc-modal-chart-container">
+                <div className="cc-modal-chart-container" style={{
+                    height: "600px",
+                    display: "flex",
+                    flexDirection: "column"
+                }}>
                     {childCategories.length > 0 && (
-                        <div className="cc-subcategory-controls">
+                        <div className="cc-subcategory-controls" style={{
+                            padding: "1rem",
+                            borderBottom: "1px solid #e5e7eb"
+                        }}>
                             <div className="cc-subcategory-controls-title">Subcategories:</div>
-                            {childCategories.map(child => (
-                                <div key={child.id} className="cc-subcategory-control-item">
-                                    <input
-                                        type="checkbox"
-                                        id={`subcategory-${child.id}`}
-                                        checked={modalVisibility[child.id] !== false}
-                                        onChange={() => handleToggleModalSubcategory(child.id)}
-                                    />
-                                    <label htmlFor={`subcategory-${child.id}`}>
-                                        <span
-                                            className="cc-subcategory-color"
-                                            style={{ backgroundColor: child.color || '#6B7280' }}
-                                        ></span>
-                                        <span>{child.name}</span>
-                                    </label>
-                                </div>
-                            ))}
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", marginTop: "0.5rem" }}>
+                                {childCategories.map(child => (
+                                    <div key={child.id} className="cc-subcategory-control-item" style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        background: "#f9fafb",
+                                        padding: "0.375rem 0.75rem",
+                                        borderRadius: "0.375rem",
+                                        border: "1px solid #e5e7eb"
+                                    }}>
+                                        <input
+                                            type="checkbox"
+                                            id={`subcategory-${child.id}`}
+                                            checked={modalVisibility[child.id] !== false}
+                                            onChange={() => handleToggleModalSubcategory(child.id)}
+                                            style={{ marginRight: "0.5rem" }}
+                                        />
+                                        <label htmlFor={`subcategory-${child.id}`} style={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            cursor: "pointer"
+                                        }}>
+                                            <span
+                                                className="cc-subcategory-color"
+                                                style={{ 
+                                                    backgroundColor: child.color || '#6B7280',
+                                                    width: "10px",
+                                                    height: "10px",
+                                                    borderRadius: "50%",
+                                                    marginRight: "0.5rem"
+                                                }}
+                                            ></span>
+                                            <span>{child.name}</span>
+                                        </label>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     )}
 
@@ -224,8 +264,9 @@ const CategoryCharts = ({
                         style={{
                             display: 'flex',
                             flex: '1 1 auto',
-                            height: 'calc(100% - 4rem)', /* Subtract subcategory controls height */
-                            minHeight: '400px' /* Ensure minimum height */
+                            overflow: 'hidden',
+                            position: 'relative',
+                            minHeight: '400px'
                         }}
                     >
                         <TimeSeriesChart
