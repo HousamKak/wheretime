@@ -5,6 +5,7 @@ import AdminTable from '../components/common/AdminTable';
 import FilterBar from '../components/common/FilterBar';
 import { Alert } from '../components/common/Alert';
 import CategoryFormModal from '../components/CategoryFormModal';
+import { formatTime } from '../utils/timeUtils';
 import '../styles/pages/adminpages.css';
 
 const CategoriesPage = () => {
@@ -209,6 +210,18 @@ const CategoriesPage = () => {
       }
     },
     {
+      key: 'threshold_minutes',
+      label: 'Time Threshold',
+      sortable: true,
+      render: (row) => {
+        return row.threshold_minutes ? (
+          <span className="threshold-display">{formatTime(row.threshold_minutes)}</span>
+        ) : (
+          <span className="text-gray-400">None</span>
+        );
+      }
+    },
+    {
       key: 'color',
       label: 'Color',
       sortable: false,
@@ -239,6 +252,15 @@ const CategoriesPage = () => {
             label: `Children of ${cat.name}` 
           }))
       ]
+    },
+    {
+      id: 'has_threshold',
+      label: 'Threshold',
+      options: [
+        { value: 'all', label: 'All Categories' },
+        { value: 'with', label: 'With Threshold' },
+        { value: 'without', label: 'Without Threshold' }
+      ]
     }
   ];
   
@@ -258,6 +280,16 @@ const CategoriesPage = () => {
   
   // Handle filter changes
   const handleFilterChange = (newFilters) => {
+    // Filter by threshold if needed
+    let filteredCategories = displayCategories;
+
+    // Apply threshold filter if specified
+    if (newFilters.has_threshold === 'with') {
+      filteredCategories = filteredCategories.filter(cat => cat.threshold_minutes !== null && cat.threshold_minutes > 0);
+    } else if (newFilters.has_threshold === 'without') {
+      filteredCategories = filteredCategories.filter(cat => cat.threshold_minutes === null || cat.threshold_minutes === 0);
+    }
+    
     setFilters(newFilters);
     // Reset expanded categories when filters change
     setExpandedCategories({});
@@ -519,6 +551,18 @@ const CategoriesPage = () => {
                   </svg>
                   <div>
                     <strong>Warning:</strong> This category has subcategories that will also be deleted.
+                  </div>
+                </div>
+              )}
+              
+              {/* Warning if has threshold */}
+              {confirmDelete.threshold_minutes && (
+                <div className="delete-warning">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="warning-icon">
+                    <path fillRule="evenodd" d="M9.401 3.003c1.155-2 4.043-2 5.197 0l7.355 12.748c1.154 2-.29 4.5-2.599 4.5H4.645c-2.309 0-3.752-2.5-2.598-4.5L9.4 3.003zM12 8.25a.75.75 0 01.75.75v3.75a.75.75 0 01-1.5 0V9a.75.75 0 01.75-.75zm0 8.25a.75.75 0 100-1.5.75.75 0 000 1.5z" clipRule="evenodd" />
+                  </svg>
+                  <div>
+                    <strong>Note:</strong> This category has a time threshold of {formatTime(confirmDelete.threshold_minutes)} that will be deleted.
                   </div>
                 </div>
               )}

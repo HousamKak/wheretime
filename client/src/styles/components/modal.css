@@ -408,3 +408,164 @@
   max-width: none;
   max-height: none;
 }
+
+/* Added to modal.css for threshold inputs */
+
+/* Threshold input group */
+.time-threshold-inputs {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.time-input-group {
+  position: relative;
+  flex: 1;
+}
+
+.time-label {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6b7280;
+  font-size: 0.75rem;
+  pointer-events: none;
+}
+
+.threshold-clear-btn {
+  padding: 0.5rem 0.75rem;
+  background-color: #f3f4f6;
+  color: #4b5563;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  height: 38px;
+  align-self: flex-end;
+}
+
+.threshold-clear-btn:hover {
+  background-color: #e5e7eb;
+  color: #ef4444;
+}
+
+.threshold-clear-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.form-helper-text {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-top: -0.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.threshold-preview {
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background-color: #f9fafb;
+  border-radius: 0.375rem;
+  border: 1px solid #e5e7eb;
+}
+
+.threshold-none {
+  color: #6b7280;
+  font-style: italic;
+}
+
+/* Added to adminpages.css for threshold display */
+
+.threshold-display {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.5rem;
+  background-color: #eef1ff;
+  color: #4361ee;
+  border-radius: 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border: 1px solid rgba(67, 97, 238, 0.2);
+}
+
+/* Threshold indicators in the time log viewer */
+.threshold-indicator {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.threshold-warning {
+  color: #ef4444;
+}
+
+.threshold-ok {
+  color: #10b981;
+}
+
+.threshold-icon {
+  margin-right: 0.25rem;
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
+/* Added to dashboard.css for threshold visualization */
+
+/* Threshold line styling */
+.threshold-line {
+  stroke-opacity: 0.8;
+}
+
+/* Threshold exceeded alert */
+.threshold-alert {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background-color: #fee2e2;
+  border: 1px solid #fca5a5;
+  border-radius: 0.5rem;
+  color: #b91c1c;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+}
+
+.threshold-alert-icon {
+  flex-shrink: 0;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-right: 0.75rem;
+  color: #ef4444;
+}
+
+.threshold-progress-bar {
+  height: 0.5rem;
+  background-color: #e5e7eb;
+  border-radius: 9999px;
+  overflow: hidden;
+  margin-top: 0.25rem;
+}
+
+.threshold-progress-fill {
+  height: 100%;
+  border-radius: 9999px;
+  transition: width 0.3s ease;
+}
+
+.threshold-progress-fill.warning {
+  background-color: #f59e0b;
+}
+
+.threshold-progress-fill.danger {
+  background-color: #ef4444;
+}
+
+.threshold-progress-fill.ok {
+  background-color: #10b981;
+}

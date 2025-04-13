@@ -20,6 +20,7 @@ export const fetchCategories = async (flat = false) => {
  * @param {string} category.name - The category name
  * @param {number|null} category.parent_id - The parent category ID (optional)
  * @param {string} category.color - The category color (optional)
+ * @param {number|null} category.threshold_minutes - Time threshold in minutes (optional)
  * @returns {Promise<Object>} - The created category
  */
 export const createCategory = async (category) => {
@@ -38,6 +39,7 @@ export const createCategory = async (category) => {
  * @param {string} [category.name] - The updated category name
  * @param {number|null} [category.parent_id] - The updated parent category ID
  * @param {string} [category.color] - The updated category color
+ * @param {number|null} [category.threshold_minutes] - The updated time threshold in minutes
  * @returns {Promise<Object>} - The updated category
  */
 export const updateCategory = async (id, category) => {

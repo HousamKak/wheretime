@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import '../styles/components/modal.css';
+import { formatTime } from '../utils/timeUtils';
 
 const CategoryFormModal = ({ 
   isOpen, 
@@ -13,7 +14,8 @@ const CategoryFormModal = ({
   const [formData, setFormData] = useState({
     name: '',
     parent_id: '',
-    color: '#4361ee'
+    color: '#4361ee',
+    threshold_minutes: ''
   });
   
   // Form errors
@@ -26,13 +28,15 @@ const CategoryFormModal = ({
         setFormData({
           name: category.name || '',
           parent_id: category.parent_id || '',
-          color: category.color || '#4361ee'
+          color: category.color || '#4361ee',
+          threshold_minutes: category.threshold_minutes || ''
         });
       } else {
         setFormData({
           name: '',
           parent_id: '',
-          color: '#4361ee'
+          color: '#4361ee',
+          threshold_minutes: ''
         });
       }
       setErrors({});
@@ -48,6 +52,39 @@ const CategoryFormModal = ({
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: null }));
     }
+  };
+  
+  // Handle time inputs (hours and minutes) for threshold
+  const handleTimeChange = (e) => {
+    const { name, value } = e.target;
+    
+    // Validate that input is a number and not negative
+    const numValue = parseInt(value) || 0;
+    if (numValue < 0) return;
+    
+    // Update the hours or minutes field
+    if (name === 'threshold_hours') {
+      const minutes = formData.threshold_minutes % 60 || 0;
+      const totalMinutes = (numValue * 60) + minutes;
+      setFormData(prev => ({ ...prev, threshold_minutes: totalMinutes }));
+    } else if (name === 'threshold_minutes') {
+      const hours = Math.floor((formData.threshold_minutes || 0) / 60);
+      const totalMinutes = (hours * 60) + numValue;
+      setFormData(prev => ({ ...prev, threshold_minutes: totalMinutes }));
+    } else {
+      // Direct update for threshold_minutes (when not coming from the fields)
+      setFormData(prev => ({ ...prev, [name]: numValue }));
+    }
+    
+    // Clear errors
+    if (errors.threshold_minutes) {
+      setErrors(prev => ({ ...prev, threshold_minutes: null }));
+    }
+  };
+  
+  // Clear threshold
+  const handleClearThreshold = () => {
+    setFormData(prev => ({ ...prev, threshold_minutes: '' }));
   };
   
   // Validate form
@@ -80,6 +117,11 @@ const CategoryFormModal = ({
       }
     }
     
+    // Validate threshold minutes
+    if (formData.threshold_minutes !== '' && formData.threshold_minutes < 1) {
+      newErrors.threshold_minutes = 'Threshold must be at least 1 minute';
+    }
+    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -92,7 +134,8 @@ const CategoryFormModal = ({
       // Format data for submission
       const submitData = {
         ...formData,
-        parent_id: formData.parent_id ? Number(formData.parent_id) : null
+        parent_id: formData.parent_id ? Number(formData.parent_id) : null,
+        threshold_minutes: formData.threshold_minutes === '' ? null : Number(formData.threshold_minutes)
       };
       
       onSubmit(submitData);
@@ -140,6 +183,10 @@ const CategoryFormModal = ({
     '#ef4444', // Red
     '#6b7280'  // Gray
   ];
+  
+  // Calculate hours and minutes from total minutes
+  const thresholdHours = formData.threshold_minutes !== '' ? Math.floor(formData.threshold_minutes / 60) : '';
+  const thresholdMinutes = formData.threshold_minutes !== '' ? formData.threshold_minutes % 60 : '';
   
   if (!isOpen) return null;
   
@@ -231,6 +278,66 @@ const CategoryFormModal = ({
                   disabled={loading}
                 />
               </div>
+            </div>
+          </div>
+          
+          {/* New Threshold field */}
+          <div className="form-group">
+            <label htmlFor="threshold_minutes">Time Threshold (Optional)</label>
+            <p className="form-helper-text">Set a maximum time limit for this category</p>
+            
+            <div className="time-threshold-inputs">
+              <div className="time-input-group">
+                <input
+                  type="number"
+                  id="threshold_hours"
+                  name="threshold_hours"
+                  value={thresholdHours}
+                  onChange={handleTimeChange}
+                  min="0"
+                  className={errors.threshold_minutes ? 'form-input error' : 'form-input'}
+                  placeholder="0"
+                  disabled={loading}
+                />
+                <span className="time-label">Hours</span>
+              </div>
+              
+              <div className="time-input-group">
+                <input
+                  type="number"
+                  id="threshold_minutes"
+                  name="threshold_minutes"
+                  value={thresholdMinutes}
+                  onChange={handleTimeChange}
+                  min="0"
+                  max="59"
+                  className={errors.threshold_minutes ? 'form-input error' : 'form-input'}
+                  placeholder="0"
+                  disabled={loading}
+                />
+                <span className="time-label">Minutes</span>
+              </div>
+              
+              <button
+                type="button"
+                onClick={handleClearThreshold}
+                className="threshold-clear-btn"
+                disabled={formData.threshold_minutes === '' || loading}
+              >
+                Clear
+              </button>
+            </div>
+            
+            {errors.threshold_minutes && (
+              <div className="form-error">{errors.threshold_minutes}</div>
+            )}
+            
+            <div className="threshold-preview">
+              {formData.threshold_minutes !== '' ? (
+                <span>Maximum time limit: {formatTime(formData.threshold_minutes)}</span>
+              ) : (
+                <span className="threshold-none">No threshold set (unlimited time)</span>
+              )}
             </div>
           </div>
           
