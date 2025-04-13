@@ -9,6 +9,8 @@ const TimeSeriesChart = ({
   expandedCategories,
   isMinified = false,
   chartId = "chart-" + Math.random().toString(36).substr(2, 9),
+  // Add showThresholds prop with default value true for backward compatibility
+  showThresholds = true
 }) => {
   // Unique ID for this chart instance to prevent interference
   const chartInstanceId = useMemo(() => chartId, [chartId]);
@@ -441,8 +443,8 @@ const TimeSeriesChart = ({
           .attr("stroke-dasharray", category.isAggregation ? "6,3" : null) // Dashed line for aggregation
           .attr("d", lineGenerator);
 
-        // Add threshold line if category has a threshold
-        if (category.threshold_minutes) {
+        // Add threshold line if category has a threshold AND showThresholds is true
+        if (category.threshold_minutes && showThresholds) {
           // Create threshold line across the width of the chart
           svg
             .append("line")
@@ -556,7 +558,8 @@ const TimeSeriesChart = ({
 
               // First show parent categories
               tooltipParentCategories.forEach(category => {
-                const thresholdText = category.threshold ? 
+                // Only show threshold info if showThresholds is true
+                const thresholdText = (category.threshold && showThresholds) ? 
                   ` <span style="color: ${category.value > category.threshold ? '#ef4444' : '#10b981'}">
                      (${Math.round(category.value / category.threshold * 100)}% of limit)
                     </span>` : '';
@@ -574,7 +577,8 @@ const TimeSeriesChart = ({
 
               // Then show child categories
               tooltipChildCategories.forEach(category => {
-                const thresholdText = category.threshold ? 
+                // Only show threshold info if showThresholds is true
+                const thresholdText = (category.threshold && showThresholds) ? 
                   ` <span style="color: ${category.value > category.threshold ? '#ef4444' : '#10b981'}">
                      (${Math.round(category.value / category.threshold * 100)}% of limit)
                     </span>` : '';
@@ -650,6 +654,7 @@ const TimeSeriesChart = ({
     categoryHierarchy,
     isMinified,
     chartInstanceId,
+    showThresholds  // Add showThresholds to dependency array
   ]);
 
   // Helper function to format time

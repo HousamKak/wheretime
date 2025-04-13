@@ -20,6 +20,9 @@ const Dashboard = ({
   const [rightSidebarOpen, setRightSidebarOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   const [dataError, setDataError] = useState(null);
+  
+  // Threshold visibility for main chart only
+  const [mainChartShowThresholds, setMainChartShowThresholds] = useState(true);
 
   // Create a map of child categories by parent ID for quick lookup
   const childrenByParent = useMemo(() => {
@@ -172,6 +175,11 @@ const Dashboard = ({
       return newState;
     });
   };
+  
+  // Toggle main chart thresholds visibility
+  const toggleMainChartThresholds = () => {
+    setMainChartShowThresholds(prev => !prev);
+  };
 
   // Calculate total time from stats
   const totalTime = stats.reduce((total, stat) => {
@@ -307,7 +315,24 @@ const Dashboard = ({
         {renderDataError()}
 
         <div className="chart-card">
-          <h2 className="chart-title">Time Spent Trends</h2>
+          <div className="chart-header">
+            <h2 className="chart-title">Time Spent Trends</h2>
+            
+            {/* Add threshold toggle button for main chart only */}
+            <div className="chart-controls">
+              <button
+                className={`threshold-toggle-btn ${mainChartShowThresholds ? 'active' : ''}`}
+                onClick={toggleMainChartThresholds}
+                title={mainChartShowThresholds ? "Hide time thresholds" : "Show time thresholds"}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z" clipRule="evenodd" />
+                </svg>
+                <span>Thresholds</span>
+              </button>
+            </div>
+          </div>
+          
           {loading ? (
             <div className="chart-loading">
               <div className="spinner"></div>
@@ -323,6 +348,7 @@ const Dashboard = ({
               categories={categories}
               categoryVisibility={categoryVisibility}
               expandedCategories={expandedCategories}
+              showThresholds={mainChartShowThresholds}
             />
           )}
         </div>
