@@ -16,6 +16,9 @@ const CategoryCharts = ({
 
   // State for modal-specific visibility settings
   const [modalVisibility, setModalVisibility] = useState({});
+  
+  // New state for tracking per-category threshold visibility in the modal
+  const [categoryThresholdVisibility, setCategoryThresholdVisibility] = useState({});
 
   // Ref for scrollable container
   const scrollContainerRef = useRef(null);
@@ -58,7 +61,15 @@ const CategoryCharts = ({
       initialModalVisibility[sub.id] = true;
     });
 
+    // Initialize threshold visibility for all categories to true
+    const initialThresholdVisibility = {};
+    initialThresholdVisibility[category.id] = true; // Main category threshold visibility
+    subcategories.forEach((sub) => {
+      initialThresholdVisibility[sub.id] = true; // All subcategory thresholds visible by default
+    });
+
     setModalVisibility(initialModalVisibility);
+    setCategoryThresholdVisibility(initialThresholdVisibility);
     setSelectedCategory(category);
     setIsModalOpen(true);
   };
@@ -74,6 +85,32 @@ const CategoryCharts = ({
     setModalVisibility((prev) => ({
       ...prev,
       [categoryId]: !prev[categoryId],
+    }));
+  };
+  
+  // Toggle threshold visibility for a specific category in the modal
+  const handleToggleThresholdVisibility = (categoryId) => {
+    setCategoryThresholdVisibility(prev => ({
+      ...prev,
+      [categoryId]: !prev[categoryId]
+    }));
+  };
+  
+  // Toggle all thresholds visibility at once
+  const handleToggleAllThresholds = (visible) => {
+    if (!selectedCategory) return;
+    
+    const childCategories = getChildCategories(selectedCategory.id);
+    const allCategoryIds = [selectedCategory.id, ...childCategories.map(c => c.id)];
+    
+    const newVisibility = {};
+    allCategoryIds.forEach(id => {
+      newVisibility[id] = visible;
+    });
+    
+    setCategoryThresholdVisibility(prev => ({
+      ...prev,
+      ...newVisibility
     }));
   };
 
@@ -200,6 +237,11 @@ const CategoryCharts = ({
     const childCategories = getChildCategories(selectedCategory.id);
     const categoryTotal = calculateCategoryTotal();
     const modalChartId = `modal-chart-${selectedCategory.id}-${Date.now()}`;
+    
+    // Check if the main category or any subcategory has a threshold
+    const hasThresholds = [selectedCategory, ...childCategories].some(cat => 
+      cat.threshold_minutes && cat.threshold_minutes > 0
+    );
 
     return (
       <ChartModal
@@ -209,30 +251,100 @@ const CategoryCharts = ({
         size="full"
       >
         <div className="modal-chart-container">
-          {childCategories.length > 0 && (
-            <div className="modal-subcategory-controls">
-              <div className="modal-subcategory-header">Subcategories:</div>
-              <div className="modal-subcategory-items">
-                {childCategories.map((child) => (
-                  <div key={child.id} className="modal-subcategory-item">
-                    <input
-                      type="checkbox"
-                      id={`subcategory-${child.id}`}
-                      checked={modalVisibility[child.id] !== false}
-                      onChange={() => handleToggleModalSubcategory(child.id)}
-                    />
-                    <label htmlFor={`subcategory-${child.id}`}>
-                      <span
-                        className="modal-subcategory-color"
-                        style={{ backgroundColor: child.color || '#6B7280' }}
-                      ></span>
-                      <span>{child.name}</span>
-                    </label>
-                  </div>
-                ))}
+          {/* Category controls section */}
+          <div className="modal-controls-container">
+            {/* Subcategory visibility controls */}
+            {childCategories.length > 0 && (
+              <div className="modal-subcategory-controls">
+                <div className="modal-subcategory-header">Subcategories:</div>
+                <div className="modal-subcategory-items">
+                  {childCategories.map((child) => (
+                    <div key={child.id} className="modal-subcategory-item">
+                      <input
+                        type="checkbox"
+                        id={`subcategory-${child.id}`}
+                        checked={modalVisibility[child.id] !== false}
+                        onChange={() => handleToggleModalSubcategory(child.id)}
+                      />
+                      <label htmlFor={`subcategory-${child.id}`}>
+                        <span
+                          className="modal-subcategory-color"
+                          style={{ backgroundColor: child.color || '#6B7280' }}
+                        ></span>
+                        <span>{child.name}</span>
+                      </label>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            )}
+            
+            {/* Threshold visibility controls - only show if thresholds exist */}
+            {hasThresholds && (
+              <div className="modal-threshold-controls">
+                <div className="modal-threshold-header">
+                  <span>Thresholds:</span>
+                  <div className="modal-threshold-toggle-all">
+                    <button 
+                      className="threshold-toggle-all-btn" 
+                      onClick={() => handleToggleAllThresholds(true)}
+                    >
+                      Show All
+                    </button>
+                    <button 
+                      className="threshold-toggle-all-btn"
+                      onClick={() => handleToggleAllThresholds(false)}
+                    >
+                      Hide All
+                    </button>
+                  </div>
+                </div>
+                
+                <div className="modal-threshold-items">
+                  {/* Main category threshold control - only show if it has a threshold */}
+                  {selectedCategory.threshold_minutes > 0 && (
+                    <div className="modal-threshold-item">
+                      <input
+                        type="checkbox"
+                        id={`threshold-${selectedCategory.id}`}
+                        checked={categoryThresholdVisibility[selectedCategory.id] !== false}
+                        onChange={() => handleToggleThresholdVisibility(selectedCategory.id)}
+                      />
+                      <label htmlFor={`threshold-${selectedCategory.id}`}>
+                        <span
+                          className="modal-threshold-color"
+                          style={{ backgroundColor: selectedCategory.color }}
+                        ></span>
+                        <span>{selectedCategory.name} Limit ({formatTime(selectedCategory.threshold_minutes)})</span>
+                      </label>
+                    </div>
+                  )}
+                  
+                  {/* Child category thresholds - only show for those with thresholds */}
+                  {childCategories
+                    .filter(child => child.threshold_minutes && child.threshold_minutes > 0)
+                    .map((child) => (
+                      <div key={`threshold-${child.id}`} className="modal-threshold-item">
+                        <input
+                          type="checkbox"
+                          id={`threshold-${child.id}`}
+                          checked={categoryThresholdVisibility[child.id] !== false}
+                          onChange={() => handleToggleThresholdVisibility(child.id)}
+                        />
+                        <label htmlFor={`threshold-${child.id}`}>
+                          <span
+                            className="modal-threshold-color"
+                            style={{ backgroundColor: child.color || '#6B7280' }}
+                          ></span>
+                          <span>{child.name} Limit ({formatTime(child.threshold_minutes)})</span>
+                        </label>
+                      </div>
+                    ))
+                  }
+                </div>
+              </div>
+            )}
+          </div>
 
           <div className="modal-chart-content">
             <TimeSeriesChart
@@ -241,6 +353,7 @@ const CategoryCharts = ({
               categoryVisibility={modalVisibility}
               expandedCategories={{ [selectedCategory.id]: true }}
               chartId={modalChartId}
+              categoryThresholdVisibility={categoryThresholdVisibility}
             />
           </div>
         </div>

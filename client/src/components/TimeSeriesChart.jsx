@@ -9,8 +9,10 @@ const TimeSeriesChart = ({
   expandedCategories,
   isMinified = false,
   chartId = "chart-" + Math.random().toString(36).substr(2, 9),
-  // Add showThresholds prop with default value true for backward compatibility
-  showThresholds = true
+  // Global threshold visibility setting (for backward compatibility)
+  showThresholds = true,
+  // New prop for per-category threshold visibility
+  categoryThresholdVisibility = {}
 }) => {
   // Unique ID for this chart instance to prevent interference
   const chartInstanceId = useMemo(() => chartId, [chartId]);
@@ -84,10 +86,6 @@ const TimeSeriesChart = ({
           }
         }
 
-        console.log(
-          `Chart ${chartInstanceId} dimensions: ${containerWidth}x${containerHeight}`
-        );
-
         // Only update dimensions if they've actually changed
         if (
           dimensions.width !== containerWidth ||
@@ -139,10 +137,6 @@ const TimeSeriesChart = ({
       dimensions.width < 10 ||
       dimensions.height < 10
     ) {
-      console.log(
-        `Skipping chart render for ${chartInstanceId} - invalid dimensions:`,
-        dimensions
-      );
       return;
     }
 
@@ -153,9 +147,6 @@ const TimeSeriesChart = ({
     }
 
     if (!data || data.length === 0 || !categories || categories.length === 0) {
-      console.log(
-        `Skipping chart render for ${chartInstanceId} - no data or categories`
-      );
       return;
     }
 
@@ -443,8 +434,25 @@ const TimeSeriesChart = ({
           .attr("stroke-dasharray", category.isAggregation ? "6,3" : null) // Dashed line for aggregation
           .attr("d", lineGenerator);
 
-        // Add threshold line if category has a threshold AND showThresholds is true
-        if (category.threshold_minutes && showThresholds) {
+        // Check if this threshold should be shown based on multiple conditions:
+        // 1. Category has a threshold
+        // 2. Either global showThresholds is true OR
+        // 3. Category-specific threshold visibility is true
+        const shouldShowThreshold = category.threshold_minutes && (
+          // For minified charts, use only global setting
+          (isMinified && showThresholds) ||
+          // For non-minified charts, first check if category-specific settings exist
+          (!isMinified && (
+            // If category-specific setting exists, use it
+            (categoryThresholdVisibility[category.id] !== undefined 
+              ? categoryThresholdVisibility[category.id] 
+              // Otherwise fall back to global setting
+              : showThresholds)
+          ))
+        );
+        
+        // Add threshold line if it should be shown
+        if (shouldShowThreshold) {
           // Create threshold line across the width of the chart
           svg
             .append("line")
@@ -558,8 +566,14 @@ const TimeSeriesChart = ({
 
               // First show parent categories
               tooltipParentCategories.forEach(category => {
-                // Only show threshold info if showThresholds is true
-                const thresholdText = (category.threshold && showThresholds) ? 
+                // Determine if we should show threshold info in the tooltip
+                const shouldShowThresholdInTooltip = category.threshold && (
+                  categoryThresholdVisibility[category.id] !== undefined 
+                    ? categoryThresholdVisibility[category.id] 
+                    : showThresholds
+                );
+                
+                const thresholdText = (shouldShowThresholdInTooltip) ? 
                   ` <span style="color: ${category.value > category.threshold ? '#ef4444' : '#10b981'}">
                      (${Math.round(category.value / category.threshold * 100)}% of limit)
                     </span>` : '';
@@ -577,8 +591,14 @@ const TimeSeriesChart = ({
 
               // Then show child categories
               tooltipChildCategories.forEach(category => {
-                // Only show threshold info if showThresholds is true
-                const thresholdText = (category.threshold && showThresholds) ? 
+                // Determine if we should show threshold info in the tooltip
+                const shouldShowThresholdInTooltip = category.threshold && (
+                  categoryThresholdVisibility[category.id] !== undefined 
+                    ? categoryThresholdVisibility[category.id] 
+                    : showThresholds
+                );
+                
+                const thresholdText = (shouldShowThresholdInTooltip) ? 
                   ` <span style="color: ${category.value > category.threshold ? '#ef4444' : '#10b981'}">
                      (${Math.round(category.value / category.threshold * 100)}% of limit)
                     </span>` : '';
@@ -654,7 +674,8 @@ const TimeSeriesChart = ({
     categoryHierarchy,
     isMinified,
     chartInstanceId,
-    showThresholds  // Add showThresholds to dependency array
+    showThresholds,
+    categoryThresholdVisibility
   ]);
 
   // Helper function to format time
