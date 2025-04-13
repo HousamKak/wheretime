@@ -241,6 +241,7 @@ const TimeSeriesChart = ({
           data: seriesData,
           isParent,
           isAggregation: false,
+          threshold_minutes: category.threshold_minutes
         });
       });
 
@@ -290,15 +291,20 @@ const TimeSeriesChart = ({
               data: aggSeriesData,
               isParent: false,
               isAggregation: true,
+              threshold_minutes: category.threshold_minutes
             });
           }
         }
       });
 
-      // Create Y scale based on max value
+      // Create Y scale based on max value, including some extra space for thresholds
+      // Find the maximum threshold value if any exists
+      const maxThreshold = d3.max(processedCategories, d => d.threshold_minutes) || 0;
+      const maxYValue = Math.max(maxY, maxThreshold);
+      
       const yScale = d3
         .scaleLinear()
-        .domain([0, maxY > 0 ? maxY * 1.1 : 10])
+        .domain([0, maxYValue > 0 ? maxYValue * 1.1 : 10])
         .range([innerHeight, 0])
         .nice();
 
@@ -434,6 +440,31 @@ const TimeSeriesChart = ({
           .attr("stroke-width", category.isAggregation ? 3 : 2) // Thicker line for aggregation
           .attr("stroke-dasharray", category.isAggregation ? "6,3" : null) // Dashed line for aggregation
           .attr("d", lineGenerator);
+
+        // Add threshold line if category has a threshold
+        if (category.threshold_minutes) {
+          // Create threshold line across the width of the chart
+          svg
+            .append("line")
+            .attr("x1", 0)
+            .attr("x2", innerWidth)
+            .attr("y1", yScale(category.threshold_minutes))
+            .attr("y2", yScale(category.threshold_minutes))
+            .attr("stroke", category.color || "#ccc")
+            .attr("stroke-width", 1.5)
+            .attr("stroke-dasharray", "4,4")
+            .attr("class", "threshold-line");
+
+          // Add threshold label
+          svg
+            .append("text")
+            .attr("x", innerWidth + 5)
+            .attr("y", yScale(category.threshold_minutes) - 5)
+            .attr("text-anchor", "start")
+            .attr("font-size", isMinified ? "8px" : "10px")
+            .attr("fill", category.color || "#666")
+            .text(isMinified ? "Limit" : `${category.name} Limit`);
+        }
       });
 
       // Add hover effects (only for full size charts)
@@ -509,13 +540,15 @@ const TimeSeriesChart = ({
                     tooltipParentCategories.push({
                       name: category.name,
                       color: category.color,
-                      value: dateValue.value
+                      value: dateValue.value,
+                      threshold: category.threshold_minutes
                     });
                   } else {
                     tooltipChildCategories.push({
                       name: category.name,
                       color: category.color,
-                      value: dateValue.value
+                      value: dateValue.value,
+                      threshold: category.threshold_minutes
                     });
                   }
                 }
@@ -523,26 +556,36 @@ const TimeSeriesChart = ({
 
               // First show parent categories
               tooltipParentCategories.forEach(category => {
+                const thresholdText = category.threshold ? 
+                  ` <span style="color: ${category.value > category.threshold ? '#ef4444' : '#10b981'}">
+                     (${Math.round(category.value / category.threshold * 100)}% of limit)
+                    </span>` : '';
+                
                 tooltipContent += `
                   <div style="display: flex; justify-content: space-between; margin-bottom: 4px; align-items: center;">
                     <div style="display: flex; align-items: center;">
                       <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background-color: ${category.color}; margin-right: 6px;"></span>
                       <span>${category.name}:</span>
                     </div>
-                    <span style="font-weight: 500; margin-left: 12px;">${formatTime(category.value)}</span>
+                    <span style="font-weight: 500; margin-left: 12px;">${formatTime(category.value)}${thresholdText}</span>
                   </div>
                 `;
               });
 
               // Then show child categories
               tooltipChildCategories.forEach(category => {
+                const thresholdText = category.threshold ? 
+                  ` <span style="color: ${category.value > category.threshold ? '#ef4444' : '#10b981'}">
+                     (${Math.round(category.value / category.threshold * 100)}% of limit)
+                    </span>` : '';
+                
                 tooltipContent += `
                     <div style="display: flex; justify-content: space-between; margin-bottom: 4px; align-items: center; padding-left: 12px;">
                       <div style="display: flex; align-items: center;">
                         <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: ${category.color}; margin-right: 6px;"></span>
                         <span>${category.name}:</span>
                       </div>
-                      <span style="font-weight: 500; margin-left: 12px;">${formatTime(category.value)}</span>
+                      <span style="font-weight: 500; margin-left: 12px;">${formatTime(category.value)}${thresholdText}</span>
                     </div>
                   `;
               });

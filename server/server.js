@@ -80,7 +80,7 @@ app.get('/categories', (req, res) => {
 // Add a new category
 app.post('/categories', (req, res) => {
   try {
-    const { name, parent_id, color } = req.body;
+    const { name, parent_id, color, threshold_minutes } = req.body;
     
     if (!name || name.trim() === '') {
       return res.status(400).json({ error: 'Category name is required' });
@@ -94,17 +94,25 @@ app.post('/categories', (req, res) => {
       }
     }
     
+    // Validate threshold_minutes if provided
+    if (threshold_minutes !== null && threshold_minutes !== undefined) {
+      if (typeof threshold_minutes !== 'number' || threshold_minutes <= 0) {
+        return res.status(400).json({ error: 'Threshold minutes must be a positive number' });
+      }
+    }
+    
     const stmt = db.prepare(
-      'INSERT INTO categories (name, parent_id, color) VALUES (?, ?, ?)'
+      'INSERT INTO categories (name, parent_id, color, threshold_minutes) VALUES (?, ?, ?, ?)'
     );
     
-    const info = stmt.run(name, parent_id || null, color || '#6B7280');
+    const info = stmt.run(name, parent_id || null, color || '#6B7280', threshold_minutes || null);
     
     res.status(201).json({ 
       id: info.lastInsertRowid,
       name, 
       parent_id: parent_id || null,
-      color: color || '#6B7280'
+      color: color || '#6B7280',
+      threshold_minutes: threshold_minutes || null
     });
   } catch (error) {
     console.error('Error creating category:', error);
@@ -122,7 +130,7 @@ app.post('/categories', (req, res) => {
 app.put('/categories/:id', (req, res) => {
   try {
     const { id } = req.params;
-    const { name, parent_id, color } = req.body;
+    const { name, parent_id, color, threshold_minutes } = req.body;
     
     // Check if category exists
     const category = db.prepare('SELECT * FROM categories WHERE id = ?').get(id);
@@ -155,14 +163,22 @@ app.put('/categories/:id', (req, res) => {
       }
     }
     
+    // Validate threshold_minutes if provided
+    if (threshold_minutes !== undefined && threshold_minutes !== null) {
+      if (typeof threshold_minutes !== 'number' || threshold_minutes <= 0) {
+        return res.status(400).json({ error: 'Threshold minutes must be a positive number' });
+      }
+    }
+    
     const stmt = db.prepare(
-      'UPDATE categories SET name = ?, parent_id = ?, color = ? WHERE id = ?'
+      'UPDATE categories SET name = ?, parent_id = ?, color = ?, threshold_minutes = ? WHERE id = ?'
     );
     
     stmt.run(
       name || category.name,
       parent_id === undefined ? category.parent_id : parent_id,
       color || category.color,
+      threshold_minutes === undefined ? category.threshold_minutes : threshold_minutes,
       id
     );
     
@@ -170,7 +186,8 @@ app.put('/categories/:id', (req, res) => {
       id: parseInt(id),
       name: name || category.name,
       parent_id: parent_id === undefined ? category.parent_id : parent_id,
-      color: color || category.color
+      color: color || category.color,
+      threshold_minutes: threshold_minutes === undefined ? category.threshold_minutes : threshold_minutes
     });
   } catch (error) {
     console.error('Error updating category:', error);
@@ -211,7 +228,7 @@ app.get('/logs', (req, res) => {
   try {
     const { start_date, end_date, category_id } = req.query;
     
-    let query = 'SELECT l.*, c.name as category_name, c.color as category_color FROM time_logs l JOIN categories c ON l.category_id = c.id';
+    let query = 'SELECT l.*, c.name as category_name, c.color as category_color, c.threshold_minutes FROM time_logs l JOIN categories c ON l.category_id = c.id';
     const params = [];
     const conditions = [];
     
@@ -276,12 +293,35 @@ app.post('/logs', (req, res) => {
     }
     
     // Check if category exists and enforce subcategory logging (not allowed for main categories)
-    const category = db.prepare('SELECT id, parent_id FROM categories WHERE id = ?').get(category_id);
+    const category = db.prepare('SELECT id, parent_id, threshold_minutes FROM categories WHERE id = ?').get(category_id);
     if (!category) {
       return res.status(400).json({ error: 'Category does not exist' });
     }
     if (category.parent_id === null) {
       return res.status(400).json({ error: 'Logging time for main categories is not allowed. Please select a subcategory.' });
+    }
+    
+    // Check if threshold is exceeded (if threshold is set)
+    if (category.threshold_minutes !== null) {
+      // Get the sum of all time logs for this category in the current period
+      // We'll check for the current month as the default period
+      const startOfMonth = new Date(new Date(date).getFullYear(), new Date(date).getMonth(), 1).toISOString().split('T')[0];
+      const endOfMonth = new Date(new Date(date).getFullYear(), new Date(date).getMonth() + 1, 0).toISOString().split('T')[0];
+      
+      const existingTimeQuery = db.prepare(
+        `SELECT SUM(total_time) as total FROM time_logs 
+         WHERE category_id = ? AND date >= ? AND date <= ? AND date != ?`
+      );
+      const existingTime = existingTimeQuery.get(category_id, startOfMonth, endOfMonth, date);
+      
+      const totalTimeForMonth = (existingTime.total || 0) + total_time;
+      
+      if (totalTimeForMonth > category.threshold_minutes) {
+        // We'll still allow it but send a warning
+        res.header('X-Threshold-Exceeded', 'true');
+        res.header('X-Threshold-Value', category.threshold_minutes.toString());
+        res.header('X-Threshold-Current', totalTimeForMonth.toString());
+      }
     }
     
     // Check if log already exists for this category and date
@@ -363,7 +403,7 @@ app.get('/stats', (req, res) => {
     
     if (grouping === 'category') {
       query = `
-        SELECT c.id, c.name, c.color, SUM(l.total_time) as total_time
+        SELECT c.id, c.name, c.color, c.threshold_minutes, SUM(l.total_time) as total_time
         FROM time_logs l
         JOIN categories c ON l.category_id = c.id
         WHERE 1=1
